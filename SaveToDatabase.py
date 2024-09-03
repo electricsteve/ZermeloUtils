@@ -38,7 +38,6 @@ def read_students():
 
 json_data = read_students()
 list_of_students = json_data["data"]
-# print(json_data)
 
 print("Number of students: ", len(list_of_students))
 # Create a connection to the database
