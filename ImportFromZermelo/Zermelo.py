@@ -16,8 +16,8 @@ headers = {
 }
 
 base_url = f"https://{school}.zportal.nl/api/v3/"
-if os.path.isdir("logs") == False:
-    os.mkdir("logs")
+if not os.path.isdir("../logs"):
+    os.mkdir("../logs")
 
 def get_students():
     data = get_endpoint("studentsindepartments", f"schoolInSchoolYear={schoolInSchoolYear}&fields=id,student,departmentOfBranch,mentorGroup,mainGroup,groupInDepartments,fullName,schoolInSchoolYear,firstName,lastName,departmentOfBranchCode,mainGroupName,prefix")
@@ -30,12 +30,15 @@ def get_teachers():
 def get_locations():
     data = get_endpoint("locationofbranches", f"schoolInSchoolYear={schoolInSchoolYear}&fields=id,name,parentteachernightCapacity,courseCapacity,supportsConcurrentAppointments,allowMeetings,branchOfSchool,secondaryBranches,schoolInSchoolYear")
     return data
+def get_groups():
+    data = get_endpoint("groupindepartments", f"schoolInSchoolYear={schoolInSchoolYear}&fields=id,isMainGroup,isMentorGroup,departmentOfBranch,name,extendedName")
+    return data
 
 def get_endpoint(endpoint, parameters):
     url = base_url + endpoint + "?" + parameters
     req = requests.get(url, headers=headers)
     json_data = json.loads(req.text)
-    messagefile = "logs/message" + datetime.datetime.now().strftime("-%Y%m%d-%H%M%S%f") + ".json"
+    messagefile = "../logs/message" + datetime.datetime.now().strftime("-%Y%m%d-%H%M%S%f") + ".json"
     json_data["request"] = {
         "url": url,
         "headers": headers

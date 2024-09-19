@@ -1,7 +1,5 @@
 # TODO
 ## Imediate future
-- ### GroupInDepartments
-Groepen, ex: v4.na1, m4.wa1
 - ### Appointments
 Lessen, voor alle lln, docenten, etc.
 1 database met alle afspraken, miss apparte tabellen voor weken ofzo, idk.
@@ -23,3 +21,5 @@ Dit wordt dan wel allemaal geupload alleen door lln waar het over gaat, dus niet
 ## Done
 - ### LocationOfBranches
 Locaties/Lokalen, ex: 105, 009, ex1
+- ### GroupInDepartments
+Groepen, ex: v4.na1, m4.wa1

@@ -28,4 +28,4 @@ class Student:
         return self.__str__()
 
     def to_tuple(self):
-        return (self.id, self.student, self.departmentOfBranch, self.mentorGroup, self.mainGroup, self.groupInDepartments, self.fullName, self.schoolInSchoolYear, self.firstName, self.lastName, self.departmentOfBranchCode, self.mainGroupName, self.prefix)
+        return self.id, self.student, self.departmentOfBranch, self.mentorGroup, self.mainGroup, self.groupInDepartments, self.fullName, self.schoolInSchoolYear, self.firstName, self.lastName, self.departmentOfBranchCode, self.mainGroupName, self.prefix

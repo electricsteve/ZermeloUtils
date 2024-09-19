@@ -1,12 +1,12 @@
 import sqlite3
-from Teacher import Teacher
+from Classes.Teacher import Teacher
 import Zermelo
 
 list_of_teachers = Zermelo.get_teachers()
 
 print("Number of teachers: ", len(list_of_teachers))
 # Create a connection to the database
-conn = sqlite3.connect('database.db')
+conn = sqlite3.connect('../database.db')
 c = conn.cursor()
 c.execute("DROP TABLE IF EXISTS TEACHERS")
 # Types: id : int,employee : str,schoolInSchoolYear : int,isMainContract : bool,mainBranchOfSchool : int,schoolYear : 2024,schoolInSchoolYearName : str,lastName : str,school : int,schoolName : str,employeeNumber : null,postedBranches : null array,prefix : str

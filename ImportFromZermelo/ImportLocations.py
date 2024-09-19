@@ -1,5 +1,5 @@
 import sqlite3
-from Location import Location
+from Classes.Location import Location
 
 import Zermelo
 
@@ -7,7 +7,7 @@ list_of_locations = Zermelo.get_locations()
 
 print("Number of locations: ", len(list_of_locations))
 # Create a connection to the database
-conn = sqlite3.connect('database.db')
+conn = sqlite3.connect('../database.db')
 c = conn.cursor()
 c.execute("DROP TABLE IF EXISTS LOCATIONS")
 # Types: id : int, name : string, parentteachernightCapacity : int, courseCapacity : int, supportsConcurrentAppointments : bool, allowMeetings : bool, branchOfSchool : int, secondaryBranches : list, schoolInSchoolYear : int
