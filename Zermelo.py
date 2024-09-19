@@ -27,6 +27,10 @@ def get_teachers():
     data = get_endpoint("contracts", f"schoolInSchoolYear={schoolInSchoolYear}&fields=id,employee,schoolInSchoolYear,isMainContract,mainBranchOfSchool,schoolYear,schoolInSchoolYearName,lastName,school,schoolName,employeeNumber,postedBranches,prefix")
     return data
 
+def get_locations():
+    data = get_endpoint("locationofbranches", f"schoolInSchoolYear={schoolInSchoolYear}&fields=id,name,parentteachernightCapacity,courseCapacity,supportsConcurrentAppointments,allowMeetings,branchOfSchool,secondaryBranches,schoolInSchoolYear")
+    return data
+
 def get_endpoint(endpoint, parameters):
     url = base_url + endpoint + "?" + parameters
     req = requests.get(url, headers=headers)
@@ -37,7 +41,7 @@ def get_endpoint(endpoint, parameters):
         "headers": headers
     }
     with open(messagefile, 'w', encoding='utf-8') as f:
-        json.dump(json_data, f, ensure_ascii=False, indent=4)
+        json.dump(json_data, f, ensure_ascii=False, indent=4, sort_keys=True)
     response = json_data["response"]
     if response["status"] != 200:
         print("Error: ", response["message"])

@@ -1,4 +1,4 @@
-# Student object
+# Teacher object
 # Fields: id,employee,schoolInSchoolYear,isMainContract,mainBranchOfSchool,schoolYear,schoolInSchoolYearName,lastName,school,schoolName,employeeNumber,postedBranches,prefix
 # Types: id : int,employee : str,schoolInSchoolYear : int,isMainContract : bool,mainBranchOfSchool : int,schoolYear : 2024,schoolInSchoolYearName : str,lastName : str,school : int,schoolName : str,employeeNumber : null,postedBranches : null array,prefix : str
 class Teacher:
