@@ -1,3 +1,6 @@
+# OUTDATED
+IK PAS HET LATER AAN MAAR VOOR NU IS DEZE README OUTDATED
+
 # Zermelo Utils
 Zermelo Utils is a project of mine with utils for the zermelo api. \
 You are able to get a database of all students at your school, if your school uses zermelo and your permissions are set the same as mine. This is because I am enrolled in only 1 school and don't know how permissions are managed at other schools. \
