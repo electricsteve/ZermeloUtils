@@ -1,5 +1,8 @@
 import sqlite3
-from Classes.Group import Group
+import sys
+import os
+sys.path.append(os.path.join(os.path.dirname(sys.path[0]), 'Classes'))
+from Group import Group
 
 import Zermelo
 
@@ -7,8 +10,11 @@ list_of_groups = Zermelo.get_groups()
 
 print("Number of groups: ", len(list_of_groups))
 # Create a connection to the database
-conn = sqlite3.connect('../database.db')
+conn = sqlite3.connect('./database.db')
 c = conn.cursor()
+
+
+
 c.execute("DROP TABLE IF EXISTS GROUPS")
 table = """ CREATE TABLE GROUPS (
     id INTEGER PRIMARY KEY,
