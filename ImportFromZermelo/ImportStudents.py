@@ -1,7 +1,4 @@
 import sqlite3
-import sys
-import os
-sys.path.append(os.path.join(os.path.dirname(sys.path[0]), 'Classes'))
 from Classes.Student import Student
 import Zermelo
 
@@ -9,7 +6,7 @@ list_of_students = Zermelo.get_students()
 
 print("Number of students: ", len(list_of_students))
 # Create a connection to the database
-conn = sqlite3.connect('./database.db')
+conn = sqlite3.connect('../database.db')
 c = conn.cursor()
 c.execute("DROP TABLE IF EXISTS STUDENTS")
 table = """ CREATE TABLE STUDENTS (
