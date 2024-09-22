@@ -17,8 +17,9 @@ if action == "allDatabase":
     students = c.fetchall()
     for student in students:
         print("Importing appointments for: ", student[0])
-        ImportAppointments.ImportAppointments(student[0])
+        ImportAppointments.ImportAppointments(student[0], 1, 52)
     conn.close()
+    ImportAppointments.close()
 elif action == "students":
     # Range
     if len(args) < 4:
@@ -28,4 +29,5 @@ elif action == "students":
     studentsEnd = args[3]
     for i in range(int(studentsStart), int(studentsEnd) + 1):
         print("Importing appointments for: ", i)
-        ImportAppointments.ImportAppointments(i)
+        ImportAppointments.ImportAppointments(i, 1, 52)
+    ImportAppointments.close()
