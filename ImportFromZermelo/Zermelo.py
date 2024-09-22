@@ -1,9 +1,9 @@
-import os
-import requests
-import json
-from dotenv import load_dotenv, find_dotenv, get_key
-import dotenv
 import datetime
+import json
+import os
+
+import requests
+from dotenv import find_dotenv, get_key
 
 dotenv_path = find_dotenv()
 
@@ -32,6 +32,12 @@ def get_locations():
     return data
 def get_groups():
     data = get_endpoint("groupindepartments", f"schoolInSchoolYear={schoolInSchoolYear}&fields=id,isMainGroup,isMentorGroup,departmentOfBranch,name,extendedName")
+    return data
+
+def get_appointments(startWeek, endWeek, user):
+    start = int(datetime.datetime.strptime(f"2024-{startWeek}-1", "%Y-%W-%w").timestamp())
+    end = int(datetime.datetime.strptime(f"2024-{endWeek + 1}-1", "%Y-%W-%w").timestamp())
+    data = get_endpoint("appointments", f"user={user}&start={start}&end={end}&fields=id,appointmentInstance,start,end,startTimeSlot,endTimeSlot,branch,type,groupsInDepartments,locationsOfBranch,optional,valid,cancelled,cancelledReason,modified,teacherChanged,groupChanged,locationChanged,timeChanged,moved,created,hidden,changeDescription,schedulerRemark,content,lastModified,new,choosableInDepartments,choosableInDepartmentCodes,extraStudentSource,onlineLocationUrl,expectedStudentCount,expectedStudentCountOnline,udmUUID,creator,onlineStudents,appointmentLastModified,remark,availableSpace,subjects,teachers,onlineTeachers")
     return data
 
 def get_endpoint(endpoint, parameters):
