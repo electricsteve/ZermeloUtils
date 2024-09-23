@@ -55,5 +55,5 @@ def get_endpoint(endpoint, parameters):
     if response["status"] != 200:
         print("Error: ", response["message"])
         print("Error response saved in: ", messagefile)
-        raise Exception(response["message"])
+        raise Exception(str(response["status"]) + response["message"])
     return response["data"]
