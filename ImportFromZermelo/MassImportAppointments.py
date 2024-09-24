@@ -1,7 +1,6 @@
 import sqlite3
 import ImportAppointments
 import sys
-import os
 
 args = sys.argv
 
