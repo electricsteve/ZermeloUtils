@@ -7,7 +7,7 @@ You are able to get a database of all students at your school, if your school us
 The configured fields are all field I have permissions for to get at my school. I will add a way later to customise it. \
 This tool may be seen as a stalker tool, this is not my intention, it's intention is for me to learn python and just expiriment.
 ## How use
-Install the needed packages using `pip -r requirements.txt`. \
+Install the needed packages using `pip install -r requirements.txt`. \
 First make a Dotenv file as specified below, after that run `python ZermeloImport.py`, this will get the required data from zermelo, 
 check the downloaded data in `message.json` and `leerlingen.json`, if the data is correct, proceed, if it is incorrect 
 you either did something wrong or your Zermelo is set up differently. \
