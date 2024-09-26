@@ -1,14 +1,15 @@
 import argparse
+import os
+import sys
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Zermelo Utils')
 
-    envtype = parser.add_subparsers(dest='env-type', required=True, help='Environment type')
-    dotenvParser = envtype.add_parser('dotenv', help='Use .env file')
-    dotenvParser.add_argument('dotenv', type=str, help='Path to .env file')
-    argParser = envtype.add_parser('args', help='Use arguments')
-    argParser.add_argument('school', type=str, help='School name (see Readme for instuctions)')
-    argParser.add_argument('schoolYear', type=str, help='School year (see Readme for instuctions)')
-    argParser.add_argument('authorization', type=str, help='Authorization token (see Readme for instuctions)')
+    parser.add_argument('--school', type=str, help='School name (see Readme for instuctions)')
+    parser.add_argument('--schoolYear', type=str, help='School year (see Readme for instuctions)')
+    parser.add_argument('--authorization', type=str, help='Authorization token (see Readme for instuctions)')
+    parser.add_argument('--dotenv', type=str, help='Path to .env file (can be used instead of --school, --schoolYear and --authorization, see Readme for instuctions)')
 
     exectype = parser.add_subparsers(dest='exec-type', required=True, help='Execution type')
 
@@ -32,3 +33,8 @@ if __name__ == "__main__":
     allAppointmentParser.add_argument('endWeek', type=int, help='End week')
 
     args = parser.parse_args()
+
+    # Make sure the user has provided either a .env file or the required arguments
+    if not args.dotenv and not (args.school and args.schoolYear and args.authorization):
+        parser.print_help()
+        exit()
