@@ -6,6 +6,8 @@
 Bot die info geeft over lln, docenten, etc. (zoals rooster, etc.)
 Met linken, dat je kan linken met je lln. (weet nog niet hoe, miss door ze te forceren een mail van hun schoolmail te sturen naar de bot)
 (andere optie is door ze te forceren in te loggen met hun zermelo en dan hun lln te checken, maar dat is beetje shady en lln willen dat wrs niet)
+- ### Rename
+Het project moet een andere naam krijgen, want het mag niet volgens de regels die zermelo heeft gesteld.
 ## Planned (maybe, not sure)
 - ### Stats
 Algemene statistieken zoals grafieken met meest voorkomende (voor/achter)namen, etc. (al beetje gedaan met Graph.py)
