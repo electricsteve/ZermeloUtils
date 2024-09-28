@@ -1,5 +1,5 @@
 import ast
-
+from datetime import datetime
 import discord
 from discord import app_commands, interactions, Interaction
 from discord.app_commands import guilds, describe, CommandTree, Group, rename
@@ -14,6 +14,20 @@ def in_common(student1, student2):
     studentObject1 = Student.from_tuple(student1)
     studentObject2 = Student.from_tuple(student2)
     return studentObject1.in_common(studentObject2, dbConn)
+
+def sort_appointments(appointmentsInput):
+    appointmentsOutput = {}
+    appointmentsInput.sort(key=lambda x: x[2])
+    for appointment in appointmentsInput:
+        start = datetime.fromtimestamp(appointment[2])
+        week = start.isocalendar()[1]
+        day = start.weekday()
+        if week not in appointmentsOutput:
+            appointmentsOutput[week] = {}
+        if day not in appointmentsOutput[week]:
+            appointmentsOutput[week][day] = []
+        appointmentsOutput[week][day].append(appointment)
+    return appointmentsOutput
 
 dotenv_path = find_dotenv()
 token = get_key(dotenv_path, 'DISCORD_TOKEN')
@@ -91,15 +105,26 @@ async def incommon(interaction : interactions.Interaction, studentId : str, week
     groupInDepartments = ast.literal_eval(student[5])
     appointments = []
     for group in groupInDepartments:
-        appointmentsCursor.execute(f"SELECT * FROM '{week}' WHERE groupsInDepartments LIKE '%{group}%'")
+        appointmentsCursor.execute(f"SELECT * FROM '{week}' WHERE groupsInDepartments LIKE '%{group}%' AND valid = 1")
         appointments += appointmentsCursor.fetchall()
-    appointments.sort(key=lambda x: x[2])
-    embedvar = discord.Embed(title="Schedule", description=f"Schedule for {student[6]} ({student[1]}) for week {week}", color=2424576, timestamp=interaction.created_at)
-    for appointment in appointments:
-        embedvar.description += f"\n- {appointment[4]}: {appointment[39]} from {appointment[40]}"
-    embedvar.set_footer(text=f"ZermeloUtils ({school})")
+    appointmentsSorted = sort_appointments(appointments)
+    embeds = []
+    for week in appointmentsSorted:
+        embedvar = discord.Embed(title="Schedule", description=f"Schedule for {student[6]} ({student[1]}) for week {week}", color=2424576, timestamp=interaction.created_at)
+        for day in appointmentsSorted[week]:
+            value = ""
+            for appointment in appointmentsSorted[week][day]:
+                timeslot = appointment[4]
+                subject = ast.literal_eval(appointment[39])[0]
+                teacher = ast.literal_eval(appointment[40])[0]
+                location = ast.literal_eval(appointment[9])[0]
+                value += f"- :number_{timeslot}: {subject} - {teacher} - {location}\n"
+            embedvar.add_field(name=f"{day}", value=value, inline=True)
+        embedvar.set_footer(text=f"ZermeloUtils ({school})")
+        embeds.append(embedvar)
     # noinspection PyUnresolvedReferences
-    await interaction.response.send_message(embed=embedvar)
+    await interaction.response.send_message(embeds=embeds)
+
 
 @client.event
 async def on_ready():
