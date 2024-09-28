@@ -1,7 +1,9 @@
 import datetime
 import sqlite3
+import sys
+from os.path import dirname, abspath
+sys.path.append(abspath(dirname(dirname(__file__))))
 from Classes.Appointment import Appointment
-
 import Zermelo
 
 # Create a connection to the database

@@ -1,4 +1,7 @@
 import sqlite3
+import sys
+from os.path import dirname, abspath
+sys.path.append(abspath(dirname(dirname(__file__))))
 from Classes.Group import Group
 
 import Zermelo

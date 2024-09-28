@@ -1,7 +1,8 @@
 import sqlite3
-import ImportAppointments
 import sys
-import os
+from os.path import dirname, abspath
+sys.path.append(abspath(dirname(dirname(__file__))))
+import ImportAppointments
 
 args = sys.argv
 
