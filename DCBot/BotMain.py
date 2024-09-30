@@ -1,4 +1,5 @@
 import ast
+from enum import Enum
 from datetime import datetime
 import discord
 from discord import app_commands, interactions, Interaction
@@ -9,6 +10,15 @@ import sys
 from os.path import dirname, abspath
 sys.path.append(abspath(dirname(dirname(__file__))))
 from Classes.Student import Student
+
+class WeekDay(Enum):
+    Monday = 0
+    Tuesday = 1
+    Wednesday = 2
+    Thursday = 3
+    Friday = 4
+    Saturday = 5
+    Sunday = 6
 
 def in_common(student1, student2):
     studentObject1 = Student.from_tuple(student1)
@@ -21,7 +31,7 @@ def sort_appointments(appointmentsInput):
     for appointment in appointmentsInput:
         start = datetime.fromtimestamp(appointment[2])
         week = start.isocalendar()[1]
-        day = start.weekday()
+        day = WeekDay(start.weekday()).name
         if week not in appointmentsOutput:
             appointmentsOutput[week] = {}
         if day not in appointmentsOutput[week]:
