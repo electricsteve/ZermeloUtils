@@ -103,9 +103,9 @@ class ScheduleGroup(Group):
 scheduleGroup = ScheduleGroup(name='schedule', description='Get schedule for student, teacher or location')
 # student
 @scheduleGroup.command(name='student', description='Get schedule for student')
-@describe(studentId='Student id', week='Week number')
-@rename(studentId='student', week='week')
-async def incommon(interaction : interactions.Interaction, studentId : str, week : int):
+@describe(studentId='Student id', week='Week number', extraWeeks='Extra weeks')
+@rename(studentId='student', week='week', extraWeeks='extraweeks')
+async def studentSchedule(interaction : interactions.Interaction, studentId : str, week : int, extraWeeks : int = 0):
     dbCursor.execute("SELECT * FROM STUDENTS WHERE student = ?", (studentId,))
     student = dbCursor.fetchone()
     if student is None:
@@ -114,9 +114,10 @@ async def incommon(interaction : interactions.Interaction, studentId : str, week
         return
     groupInDepartments = ast.literal_eval(student[5])
     appointments = []
-    for group in groupInDepartments:
-        appointmentsCursor.execute(f"SELECT * FROM '{week}' WHERE groupsInDepartments LIKE '%{group}%' AND valid = 1")
-        appointments += appointmentsCursor.fetchall()
+    for week in range(week, week + extraWeeks + 1):
+        for group in groupInDepartments:
+            appointmentsCursor.execute(f"SELECT * FROM '{week}' WHERE groupsInDepartments LIKE '%{group}%' AND valid = 1")
+            appointments += appointmentsCursor.fetchall()
     appointmentsSorted = sort_appointments(appointments)
     embeds = []
     for week in appointmentsSorted:
@@ -134,7 +135,41 @@ async def incommon(interaction : interactions.Interaction, studentId : str, week
         embeds.append(embedvar)
     # noinspection PyUnresolvedReferences
     await interaction.response.send_message(embeds=embeds)
-
+@scheduleGroup.command(name='teacher', description='Get schedule for teacher')
+@describe(teacherId='Teacher id', week='Week number', extraWeeks='Extra weeks')
+@rename(teacherId='teacher', week='week', extraWeeks='extraweeks')
+async def teacherSchedule(interaction : interactions.Interaction, teacherId : str, week : int, extraWeeks : int = 0):
+    dbCursor.execute("SELECT * FROM TEACHERS WHERE employee = ?", (teacherId,))
+    teacher = dbCursor.fetchone()
+    if teacher is None:
+        # noinspection PyUnresolvedReferences
+        await interaction.response.send_message("Teacher not found")
+        return
+    appointments = []
+    for week in range(week, week + extraWeeks + 1):
+        appointmentsCursor.execute(f"SELECT * FROM '{week}' WHERE teachers LIKE '%{teacherId}%' AND valid = 1")
+        appointments += appointmentsCursor.fetchall()
+    appointmentsSorted = sort_appointments(appointments)
+    embeds = []
+    for week in appointmentsSorted:
+        embedvar = discord.Embed(title="Schedule", description=f"Schedule for {teacher[7]} ({teacher[1]}) for week {week}", color=2424576, timestamp=interaction.created_at)
+        for day in appointmentsSorted[week]:
+            value = ""
+            for appointment in appointmentsSorted[week][day]:
+                timeslot = appointment[4]
+                subject = ast.literal_eval(appointment[39])[0]
+                groups = ast.literal_eval(appointment[8])
+                location = ast.literal_eval(appointment[9])[0]
+                groupNames = []
+                for group in groups:
+                    dbCursor.execute("SELECT * FROM GROUPS WHERE id = ?", (group,))
+                    groupNames.append(dbCursor.fetchone()[5])
+                value += f"- :number_{timeslot}: {subject} - {', '.join(groupNames)} - {location}\n"
+            embedvar.add_field(name=f"{day}", value=value, inline=True)
+        embedvar.set_footer(text=f"ZermeloUtils ({school})")
+        embeds.append(embedvar)
+    # noinspection PyUnresolvedReferences
+    await interaction.response.send_message(embeds=embeds)
 
 @client.event
 async def on_ready():
