@@ -1,13 +1,15 @@
 import ast
-from enum import Enum
-from datetime import datetime
-import discord
-from discord import app_commands, interactions, Interaction
-from discord.app_commands import guilds, describe, CommandTree, Group, rename
-from dotenv import find_dotenv, get_key
 import sqlite3
 import sys
+from datetime import datetime
+from enum import Enum
 from os.path import dirname, abspath
+
+import discord
+from discord import interactions
+from discord.app_commands import guilds, describe, CommandTree, Group, rename
+from dotenv import find_dotenv, get_key
+
 sys.path.append(abspath(dirname(dirname(__file__))))
 from Classes.Student import Student
 
@@ -39,6 +41,11 @@ def sort_appointments(appointmentsInput):
         appointmentsOutput[week][day].append(appointment)
     return appointmentsOutput
 
+def check_if_week_exists(week : int):
+    appointmentsCursor.execute(f"SELECT * FROM sqlite_master WHERE type='table' AND name={week}")
+    week = appointmentsCursor.fetchone()
+    return week is not None
+
 dotenv_path = find_dotenv()
 token = get_key(dotenv_path, 'DISCORD_TOKEN')
 test_guild = get_key(dotenv_path, 'TEST_GUILD')
@@ -50,7 +57,6 @@ intents.message_content = True
 client = discord.Client(intents=intents)
 
 tree = CommandTree(client)
-
 dbConn = sqlite3.connect('./database.db')
 dbCursor = dbConn.cursor()
 appointmentsConn = sqlite3.connect('./appointments.db')
@@ -114,10 +120,21 @@ async def studentSchedule(interaction : interactions.Interaction, studentId : st
         return
     groupInDepartments = ast.literal_eval(student[5])
     appointments = []
+    weekErrors = []
     for week in range(week, week + extraWeeks + 1):
+        if not check_if_week_exists(week):
+            weekErrors.append(str(week))
+            continue
         for group in groupInDepartments:
             appointmentsCursor.execute(f"SELECT * FROM '{week}' WHERE groupsInDepartments LIKE '%{group}%' AND valid = 1")
             appointments += appointmentsCursor.fetchall()
+    if len(weekErrors) != 0:
+        # noinspection PyUnresolvedReferences
+        await interaction.response.send_message(f"Error: Week(s) {', '.join(weekErrors)} do(es) not exist.")
+        return
+    if len(appointments) == 0:
+        # noinspection PyUnresolvedReferences
+        await interaction.response.send_message("No appointments found.")
     appointmentsSorted = sort_appointments(appointments)
     embeds = []
     for week in appointmentsSorted:
@@ -129,7 +146,10 @@ async def studentSchedule(interaction : interactions.Interaction, studentId : st
                 subject = ast.literal_eval(appointment[39])[0]
                 teacher = ast.literal_eval(appointment[40])[0]
                 location = ast.literal_eval(appointment[9])[0]
-                value += f"- :number_{timeslot}: {subject} - {teacher} - {location}\n"
+                if appointment[12] == 1: # Cancelled
+                    value += f"- :no_entry: :number_{timeslot}: ~~{subject} - {teacher} - {location}~~\n"
+                else:
+                    value += f"- :number_{timeslot}: {subject} - {teacher} - {location}\n"
             embedvar.add_field(name=f"{day}", value=value, inline=True)
         embedvar.set_footer(text=f"ZermeloUtils ({school})")
         embeds.append(embedvar)
@@ -146,9 +166,20 @@ async def teacherSchedule(interaction : interactions.Interaction, teacherId : st
         await interaction.response.send_message("Teacher not found")
         return
     appointments = []
+    weekErrors = []
     for week in range(week, week + extraWeeks + 1):
+        if not check_if_week_exists(week):
+            weekErrors.append(str(week))
+            continue
         appointmentsCursor.execute(f"SELECT * FROM '{week}' WHERE teachers LIKE '%{teacherId}%' AND valid = 1")
         appointments += appointmentsCursor.fetchall()
+    if len(weekErrors) != 0:
+        # noinspection PyUnresolvedReferences
+        await interaction.response.send_message(f"Error: Week(s) {', '.join(weekErrors)} do(es) not exist.")
+        return
+    if len(appointments) == 0:
+        # noinspection PyUnresolvedReferences
+        await interaction.response.send_message("No appointments found.")
     appointmentsSorted = sort_appointments(appointments)
     embeds = []
     for week in appointmentsSorted:
@@ -163,8 +194,12 @@ async def teacherSchedule(interaction : interactions.Interaction, teacherId : st
                 groupNames = []
                 for group in groups:
                     dbCursor.execute("SELECT * FROM GROUPS WHERE id = ?", (group,))
-                    groupNames.append(dbCursor.fetchone()[5])
-                value += f"- :number_{timeslot}: {subject} - {', '.join(groupNames)} - {location}\n"
+                    groupName = dbCursor.fetchone()[5]
+                    groupNames.append(groupName)
+                if appointment[12] == 1: # Cancelled
+                    value += f"- :no_entry: :number_{timeslot}: ~~{subject} - {', '.join(groupNames)} - {location}~~\n"
+                else:
+                    value += f"- :number_{timeslot}: {subject} - {', '.join(groupNames)} - {location}\n"
             embedvar.add_field(name=f"{day}", value=value, inline=True)
         embedvar.set_footer(text=f"ZermeloUtils ({school})")
         embeds.append(embedvar)

@@ -7,8 +7,8 @@ from Classes.Appointment import Appointment
 import Zermelo
 
 # Create a connection to the database
-conn = sqlite3.connect('../appointments.db')
-conn2 = sqlite3.connect('../database.db')
+conn = sqlite3.connect('./appointments.db')
+conn2 = sqlite3.connect('./database.db')
 c = conn.cursor()
 c2 = conn2.cursor()
 

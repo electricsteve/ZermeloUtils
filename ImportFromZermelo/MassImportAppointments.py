@@ -12,7 +12,7 @@ if len(args) < 2:
 
 action = args[1]
 if action == "allDatabase":
-    conn = sqlite3.connect('../database.db')
+    conn = sqlite3.connect('./database.db')
     c = conn.cursor()
     c.execute("SELECT student FROM STUDENTS")
     students = c.fetchall()
