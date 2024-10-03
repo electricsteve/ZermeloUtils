@@ -7,39 +7,28 @@ from Classes.Appointment import Appointment
 import Zermelo
 
 # Create a connection to the database
-conn = sqlite3.connect('./appointments.db')
-conn2 = sqlite3.connect('./database.db')
-c = conn.cursor()
-c2 = conn2.cursor()
+appointmentConn = sqlite3.connect('./appointments.db', check_same_thread=False)
+dbConn = sqlite3.connect('./database.db')
+appointmentCursor = appointmentConn.cursor()
+dbCursor = dbConn.cursor()
 
-def ImportAppointments(user, startWeek, endWeek):
-    if startWeek <= 33:
-        userObject = c2.execute(f"SELECT departmentOfBranchCode FROM STUDENTS WHERE student = {user}").fetchone()
-        print(userObject[0])
-        if "1" in userObject[0]:
-            startWeek = 34
-    try:
-        list_of_appointments = Zermelo.get_appointments(startWeek, endWeek, user)
-    except Exception as e:
-        if "403" in str(e):
-            # Try again, but with week 34
-            list_of_appointments = Zermelo.get_appointments(34, endWeek, user)
-        else:
-            raise e
-    print("Number of appointments: ", len(list_of_appointments))
-    # Tables will now be per week, no longer per user
-    # First, sort the appointments by week
+mass = False
 
-    appointmentObjectList = {}
-    for appointment in list_of_appointments:
-        appointmentObject = Appointment(appointment)
-        # print(appointmentObject)
-        week = datetime.datetime.fromtimestamp(appointmentObject.start).isocalendar()[1]
-        # print("Week: ", week)
-        if week in appointmentObjectList: appointmentObjectList[week].append(appointmentObject)
-        else: appointmentObjectList[week] = [appointmentObject]
-        # print("Type: " + str(type(appointmentObjectList[week])))
+massUsers = {}
 
+def setMass(value):
+    global mass
+    mass = value
+    if value:
+        global massUsers
+        users = dbCursor.execute("SELECT student, departmentOfBranchCode FROM STUDENTS").fetchall()
+        for user in users:
+            if "1" in user[1]:
+                massUsers[user[0]] = True
+            else:
+                massUsers[user[0]] = False
+
+def saveAppointments(appointmentObjectList):
     for week in appointmentObjectList:
         table = f""" CREATE TABLE IF NOT EXISTS '{week}' (
             id INTEGER PRIMARY KEY,
@@ -85,14 +74,63 @@ def ImportAppointments(user, startWeek, endWeek):
             teachers TEXT,
             onlineTeachers TEXT
         ); """
-        c.execute(table)
+        appointmentCursor.execute(table)
         # print("Table created for week: ", week)
         # print(appointmentObjectList[week])
         # print(type(appointmentObjectList[week]))
         # print(len(appointmentObjectList[week]))
         for appointmentObject in appointmentObjectList[week]:
-            c.execute(f"INSERT OR REPLACE INTO '{week}' VALUES ({', '.join(['?'] * 42)})", appointmentObject.to_tuple())
-    conn.commit()
+            appointmentCursor.execute(f"INSERT OR REPLACE INTO '{week}' VALUES ({', '.join(['?'] * 42)})", appointmentObject.to_tuple())
+
+massAppointmentObjectList = {}
+
+def ImportAppointments(user, startWeek, endWeek):
+    if startWeek <= 33:
+        if not mass:
+            userObject = dbCursor.execute(f"SELECT departmentOfBranchCode FROM STUDENTS WHERE student = {user}").fetchone()
+            print(userObject[0])
+            if "1" in userObject[0]:
+                startWeek = 34
+        else:
+            if massUsers[user]:
+                startWeek = 34
+    try:
+        list_of_appointments = Zermelo.get_appointments(startWeek, endWeek, user)
+    except Exception as e:
+        if "403" in str(e):
+            # Try again, but with week 34
+            list_of_appointments = Zermelo.get_appointments(34, endWeek, user)
+        else:
+            raise e
+    print("Number of appointments: ", len(list_of_appointments))
+    # Tables will now be per week, no longer per user
+    # First, sort the appointments by week
+    if not mass:
+        appointmentObjectList = {}
+        for appointment in list_of_appointments:
+            appointmentObject = Appointment(appointment)
+            # print(appointmentObject)
+            week = datetime.datetime.fromtimestamp(appointmentObject.start).isocalendar()[1]
+            # print("Week: ", week)
+            if week in appointmentObjectList: appointmentObjectList[week].append(appointmentObject)
+            else: appointmentObjectList[week] = [appointmentObject]
+            # print("Type: " + str(type(appointmentObjectList[week])))
+        saveAppointments(appointmentObjectList)
+        appointmentConn.commit()
+    else:
+        global massAppointmentObjectList
+        for appointment in list_of_appointments:
+            appointmentObject = Appointment(appointment)
+            # print(appointmentObject)
+            week = datetime.datetime.fromtimestamp(appointmentObject.start).isocalendar()[1]
+            # print("Week: ", week)
+            if week in massAppointmentObjectList: massAppointmentObjectList[week].append(appointmentObject)
+            else: massAppointmentObjectList[week] = [appointmentObject]
+            # print("Type: " + str(type(massAppointmentObjectList[week])))
+
+def commit():
+    saveAppointments(massAppointmentObjectList)
+    appointmentConn.commit()
 
 def close():
-    conn.close()
+    appointmentConn.close()
