@@ -131,6 +131,7 @@ def ImportAppointments(user, startWeek, endWeek):
 def commit():
     saveAppointments(massAppointmentObjectList)
     appointmentConn.commit()
+    massAppointmentObjectList.clear()
 
 def close():
     appointmentConn.close()
