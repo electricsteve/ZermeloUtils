@@ -5,6 +5,7 @@ from os.path import dirname, abspath
 sys.path.append(abspath(dirname(dirname(__file__))))
 from Classes.Appointment import Appointment
 import Zermelo
+import threading
 
 # Create a connection to the database
 appointmentConn = sqlite3.connect('./appointments.db', check_same_thread=False)
@@ -15,6 +16,8 @@ dbCursor = dbConn.cursor()
 mass = False
 
 massUsers = {}
+
+lock = threading.Lock()
 
 def setMass(value):
     global mass
@@ -118,20 +121,22 @@ def ImportAppointments(user, startWeek, endWeek):
         saveAppointments(appointmentObjectList)
         appointmentConn.commit()
     else:
-        global massAppointmentObjectList
-        for appointment in list_of_appointments:
-            appointmentObject = Appointment(appointment)
-            # print(appointmentObject)
-            week = datetime.datetime.fromtimestamp(appointmentObject.start).isocalendar()[1]
-            # print("Week: ", week)
-            if week in massAppointmentObjectList: massAppointmentObjectList[week].append(appointmentObject)
-            else: massAppointmentObjectList[week] = [appointmentObject]
-            # print("Type: " + str(type(massAppointmentObjectList[week])))
+        with lock:
+            global massAppointmentObjectList
+            for appointment in list_of_appointments:
+                appointmentObject = Appointment(appointment)
+                # print(appointmentObject)
+                week = datetime.datetime.fromtimestamp(appointmentObject.start).isocalendar()[1]
+                # print("Week: ", week)
+                if week in massAppointmentObjectList: massAppointmentObjectList[week].append(appointmentObject)
+                else: massAppointmentObjectList[week] = [appointmentObject]
+                # print("Type: " + str(type(massAppointmentObjectList[week])))
 
 def commit():
-    saveAppointments(massAppointmentObjectList)
-    appointmentConn.commit()
-    massAppointmentObjectList.clear()
+    with lock:
+        saveAppointments(massAppointmentObjectList)
+        appointmentConn.commit()
+        massAppointmentObjectList.clear()
 
 def close():
     appointmentConn.close()
