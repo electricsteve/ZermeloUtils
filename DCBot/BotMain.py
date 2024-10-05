@@ -68,7 +68,7 @@ async def ping(interaction):
     await interaction.response.send_message(f'PONG! Latency: {str(int(client.latency * 1000))}ms')
 # locations
 @tree.command(name='locations', description='Get all locations', guild=discord.Object(id=test_guild))
-async def locations(interaction : interactions.Interaction):
+async def locationsCommand(interaction : interactions.Interaction):
     dbCursor.execute("SELECT * FROM LOCATIONS")
     locationList = dbCursor.fetchall()
     locationList.sort(key=lambda x: x[1])
@@ -83,7 +83,7 @@ async def locations(interaction : interactions.Interaction):
 # incommon
 @tree.command(name='incommon', description='Get lessons and groups 2 people have in common', guild=discord.Object(id=test_guild))
 @describe(student1='First student', student2='Second student')
-async def incommon(interaction : interactions.Interaction, student1 : str, student2 : str):
+async def incommonCommand(interaction : interactions.Interaction, student1 : str, student2 : str):
     if student1 == student2:
         # noinspection PyUnresolvedReferences
         await interaction.response.send_message("Please provide two different students")
@@ -102,6 +102,24 @@ async def incommon(interaction : interactions.Interaction, student1 : str, stude
     embedvar.set_footer(text=f"ZermeloUtils ({school})")
     # noinspection PyUnresolvedReferences
     await interaction.response.send_message(embed=embedvar)
+# Search
+@tree.command(name='search', description='Search for student, (teacher or location later)', guild=discord.Object(id=test_guild))
+@describe(searchInput='Search input')
+@rename(searchInput='input')
+async def searchCommand(interaction : interactions.Interaction, searchInput : str):
+    dbCursor.execute("SELECT * FROM STUDENTS WHERE fullName LIKE ?", (f'%{searchInput}%',))
+    students = dbCursor.fetchall()
+    if len(students) == 0:
+        # noinspection PyUnresolvedReferences
+        await interaction.response.send_message("No students found")
+        return
+    embedvar = discord.Embed(title="Search", description=f"Search results for '{searchInput}'", color=2424576, timestamp=interaction.created_at)
+    embedvar.description += f"\nNumber of students found: {len(students)}"
+    for student in students:
+        embedvar.description += f"\n- {student[6]} ({student[1]})"
+    embedvar.set_footer(text=f"ZermeloUtils ({school})")
+    # noinspection PyUnresolvedReferences
+    await interaction.response.send_message(embed=embedvar)
 # schedules
 @guilds(discord.Object(id=test_guild))
 class ScheduleGroup(Group):
@@ -111,7 +129,7 @@ scheduleGroup = ScheduleGroup(name='schedule', description='Get schedule for stu
 @scheduleGroup.command(name='student', description='Get schedule for student')
 @describe(studentId='Student id', week='Week number', extraWeeks='Extra weeks')
 @rename(studentId='student', week='week', extraWeeks='extraweeks')
-async def studentSchedule(interaction : interactions.Interaction, studentId : str, week : int, extraWeeks : int = 0):
+async def studentScheduleCommand(interaction : interactions.Interaction, studentId : str, week : int, extraWeeks : int = 0):
     dbCursor.execute("SELECT * FROM STUDENTS WHERE student = ?", (studentId,))
     student = dbCursor.fetchone()
     if student is None:
@@ -137,6 +155,7 @@ async def studentSchedule(interaction : interactions.Interaction, studentId : st
         await interaction.response.send_message("No appointments found.")
     appointmentsSorted = sort_appointments(appointments)
     embeds = []
+    locations = {}
     for week in appointmentsSorted:
         embedvar = discord.Embed(title="Schedule", description=f"Schedule for {student[6]} ({student[1]}) for week {week}", color=2424576, timestamp=interaction.created_at)
         for day in appointmentsSorted[week]:
@@ -146,6 +165,9 @@ async def studentSchedule(interaction : interactions.Interaction, studentId : st
                 subject = ast.literal_eval(appointment[39])[0]
                 teacher = ast.literal_eval(appointment[40])[0]
                 location = ast.literal_eval(appointment[9])[0]
+                if location not in locations:
+                    locations[location] = dbCursor.execute("SELECT * FROM LOCATIONS WHERE id = ?", (location,)).fetchone()[1]
+                location = locations[location]
                 if appointment[12] == 1: # Cancelled
                     value += f"- :no_entry: :number_{timeslot}: ~~{subject} - {teacher} - {location}~~\n"
                 else:
@@ -158,7 +180,7 @@ async def studentSchedule(interaction : interactions.Interaction, studentId : st
 @scheduleGroup.command(name='teacher', description='Get schedule for teacher')
 @describe(teacherId='Teacher id', week='Week number', extraWeeks='Extra weeks')
 @rename(teacherId='teacher', week='week', extraWeeks='extraweeks')
-async def teacherSchedule(interaction : interactions.Interaction, teacherId : str, week : int, extraWeeks : int = 0):
+async def teacherScheduleCommand(interaction : interactions.Interaction, teacherId : str, week : int, extraWeeks : int = 0):
     dbCursor.execute("SELECT * FROM TEACHERS WHERE employee = ?", (teacherId,))
     teacher = dbCursor.fetchone()
     if teacher is None:
@@ -182,6 +204,7 @@ async def teacherSchedule(interaction : interactions.Interaction, teacherId : st
         await interaction.response.send_message("No appointments found.")
     appointmentsSorted = sort_appointments(appointments)
     embeds = []
+    locations = {}
     for week in appointmentsSorted:
         embedvar = discord.Embed(title="Schedule", description=f"Schedule for {teacher[7]} ({teacher[1]}) for week {week}", color=2424576, timestamp=interaction.created_at)
         for day in appointmentsSorted[week]:
@@ -191,6 +214,9 @@ async def teacherSchedule(interaction : interactions.Interaction, teacherId : st
                 subject = ast.literal_eval(appointment[39])[0]
                 groups = ast.literal_eval(appointment[8])
                 location = ast.literal_eval(appointment[9])[0]
+                if location not in locations:
+                    locations[location] = dbCursor.execute("SELECT * FROM LOCATIONS WHERE id = ?", (location,)).fetchone()[1]
+                location = locations[location]
                 groupNames = []
                 for group in groups:
                     dbCursor.execute("SELECT * FROM GROUPS WHERE id = ?", (group,))
