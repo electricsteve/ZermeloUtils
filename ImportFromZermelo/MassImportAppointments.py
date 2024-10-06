@@ -14,12 +14,12 @@ if len(args) < 2:
     print("Please provide action")
     sys.exit()
 
-def splitList(list, n):
-    for i in range(0, len(list), n):
-        yield list[i:i + n]
+def splitList(inputList, n):
+    for i in range(0, len(inputList), n):
+        yield inputList[i:i + n]
 
-def importThread(students, start, end):
-    for student in students:
+def importThread(inputStudents, start, end):
+    for student in inputStudents:
         ImportAppointments.ImportAppointments(student[0], start, end)
 
 def savingThread():

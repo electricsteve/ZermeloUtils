@@ -22,6 +22,10 @@ class WeekDay(Enum):
     Saturday = 5
     Sunday = 6
 
+def splitList(inputList, n):
+    for i in range(0, len(inputList), n):
+        yield inputList[i:i + n]
+
 def in_common(student1, student2):
     studentObject1 = Student.from_tuple(student1)
     studentObject2 = Student.from_tuple(student2)
@@ -70,14 +74,48 @@ async def ping(interaction):
 @tree.command(name='locations', description='Get all locations', guild=discord.Object(id=test_guild))
 async def locationsCommand(interaction : interactions.Interaction):
     dbCursor.execute("SELECT * FROM LOCATIONS")
-    locationList = dbCursor.fetchall()
-    locationList.sort(key=lambda x: x[1])
-    locationList = [(i[1]) for i in locationList]
+    locationLists = dbCursor.fetchall()
+    locationLists.sort(key=lambda x: x[1])
+    locationLists = [(i[1]) for i in locationLists]
+    remaining = len(locationLists) % 3
+    if remaining != 0:
+        for i in range(remaining):
+            locationLists.append("")
+    locationLists = list(splitList(locationLists, len(locationLists) // 3))
     embedvar = discord.Embed(title="Locations", description=f"All locations (classrooms, gym, etc.)", color=2424576, timestamp=interaction.created_at)
-    embedvar.description += f"\n\nNumber of locations: {len(locationList)}"
+    for locationList in locationLists:
+        embedvar.add_field(name="", value="\n".join(locationList), inline=True)
     embedvar.set_footer(text=f"ZermeloUtils ({school})")
-    for location in locationList:
-        embedvar.description += f"\n- {location}"
+    # noinspection PyUnresolvedReferences
+    await interaction.response.send_message(embed=embedvar)
+# Teachers
+@tree.command(name='teachers', description='Get all teachers', guild=discord.Object(id=test_guild))
+async def teachersCommand(interaction : interactions.Interaction):
+    dbCursor.execute("SELECT * FROM TEACHERS")
+    teacherLists = dbCursor.fetchall()
+    for i in range(len(teacherLists)):
+        if teacherLists[i][7] is None:
+            teacherLists[i] = list(teacherLists[i])
+            teacherLists[i][7] = teacherLists[i][1]
+            teacherLists[i] = tuple(teacherLists[i])
+    teacherLists.sort(key=lambda x: x[7])
+    def getStr(teacher):
+        name = teacher[7]
+        if teacher[12] is not None:
+            name += f", {teacher[12]}"
+        if teacher[1] is not None:
+            name += f" ({teacher[1]})"
+        return name
+    teacherLists = [getStr(i) for i in teacherLists]
+    remaining = len(teacherLists) % 6
+    if remaining != 0:
+        for i in range(remaining):
+            teacherLists.append("")
+    teacherLists = list(splitList(teacherLists, len(teacherLists) // 6))
+    embedvar = discord.Embed(title="Teachers", description=f"All teachers", color=2424576, timestamp=interaction.created_at)
+    for teacherList in teacherLists:
+        embedvar.add_field(name="", value="\n".join(teacherList), inline=True)
+    embedvar.set_footer(text=f"ZermeloUtils ({school})")
     # noinspection PyUnresolvedReferences
     await interaction.response.send_message(embed=embedvar)
 # incommon
