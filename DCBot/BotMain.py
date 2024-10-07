@@ -141,20 +141,30 @@ async def incommonCommand(interaction : interactions.Interaction, student1 : str
     # noinspection PyUnresolvedReferences
     await interaction.response.send_message(embed=embedvar)
 # Search
-@tree.command(name='search', description='Search for student, (teacher or location later)', guild=discord.Object(id=test_guild))
+@tree.command(name='search', description='Search for students, teachers or locations', guild=discord.Object(id=test_guild))
 @describe(searchInput='Search input')
 @rename(searchInput='input')
 async def searchCommand(interaction : interactions.Interaction, searchInput : str):
     dbCursor.execute("SELECT * FROM STUDENTS WHERE fullName LIKE ?", (f'%{searchInput}%',))
     students = dbCursor.fetchall()
-    if len(students) == 0:
+    dbCursor.execute("SELECT * FROM TEACHERS WHERE lastName LIKE ? OR employee LIKE ?", (f'%{searchInput}%',f"%{searchInput}%"))
+    teachers = dbCursor.fetchall()
+    dbCursor.execute("SELECT * FROM LOCATIONS WHERE name LIKE ?", (f'%{searchInput}%',))
+    locations = dbCursor.fetchall()
+    if len(students) == 0 and len(teachers) == 0 and len(locations) == 0:
         # noinspection PyUnresolvedReferences
-        await interaction.response.send_message("No students found")
+        await interaction.response.send_message("No results found")
         return
     embedvar = discord.Embed(title="Search", description=f"Search results for '{searchInput}'", color=2424576, timestamp=interaction.created_at)
     embedvar.description += f"\nNumber of students found: {len(students)}"
     for student in students:
         embedvar.description += f"\n- {student[6]} ({student[1]})"
+    embedvar.description += f"\nNumber of teachers found: {len(teachers)}"
+    for teacher in teachers:
+        embedvar.description += f"\n- {teacher[7]} ({teacher[1]})"
+    embedvar.description += f"\nNumber of locations found: {len(locations)}"
+    for location in locations:
+        embedvar.description += f"\n- {location[1]}"
     embedvar.set_footer(text=f"ZermeloUtils ({school})")
     # noinspection PyUnresolvedReferences
     await interaction.response.send_message(embed=embedvar)
