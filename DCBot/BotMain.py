@@ -66,6 +66,9 @@ dbCursor = dbConn.cursor()
 appointmentsConn = sqlite3.connect('./appointments.db')
 appointmentsCursor = appointmentsConn.cursor()
 
+def get_embed(title, description, color):
+    return discord.Embed(title=title, description=description, color=color)
+
 # ping
 @tree.command(name='ping', description='Get bot ping', guild=discord.Object(id=test_guild))
 async def ping(interaction):
