@@ -12,6 +12,7 @@ from dotenv import find_dotenv, get_key
 
 sys.path.append(abspath(dirname(dirname(__file__))))
 from Classes.Student import Student
+from DCBot.Embeds import AppEmbedType, appointments_embed, appointments_embeds, default_embed, error_embed
 
 class WeekDay(Enum):
     Monday = 0
@@ -65,9 +66,6 @@ dbConn = sqlite3.connect('./database.db')
 dbCursor = dbConn.cursor()
 appointmentsConn = sqlite3.connect('./appointments.db')
 appointmentsCursor = appointmentsConn.cursor()
-
-def get_embed(title, description, color):
-    return discord.Embed(title=title, description=description, color=color)
 
 # ping
 @tree.command(name='ping', description='Get bot ping', guild=discord.Object(id=test_guild))
@@ -205,27 +203,7 @@ async def studentScheduleCommand(interaction : interactions.Interaction, student
         # noinspection PyUnresolvedReferences
         await interaction.response.send_message("No appointments found.")
     appointmentsSorted = sort_appointments(appointments)
-    embeds = []
-    locations = {}
-    for week in appointmentsSorted:
-        embedvar = discord.Embed(title="Schedule", description=f"Schedule for {student[6]} ({student[1]}) for week {week}", color=2424576, timestamp=interaction.created_at)
-        for day in appointmentsSorted[week]:
-            value = ""
-            for appointment in appointmentsSorted[week][day]:
-                timeslot = appointment[4]
-                subject = ast.literal_eval(appointment[39])[0]
-                teacher = ast.literal_eval(appointment[40])[0]
-                location = ast.literal_eval(appointment[9])[0]
-                if location not in locations:
-                    locations[location] = dbCursor.execute("SELECT * FROM LOCATIONS WHERE id = ?", (location,)).fetchone()[1]
-                location = locations[location]
-                if appointment[12] == 1: # Cancelled
-                    value += f"- :no_entry: :number_{timeslot}: ~~{subject} - {teacher} - {location}~~\n"
-                else:
-                    value += f"- :number_{timeslot}: {subject} - {teacher} - {location}\n"
-            embedvar.add_field(name=f"{day}", value=value, inline=True)
-        embedvar.set_footer(text=f"ZermeloUtils ({school})")
-        embeds.append(embedvar)
+    embeds = appointments_embeds(student, appointmentsSorted, AppEmbedType.STUDENT, interaction)
     # noinspection PyUnresolvedReferences
     await interaction.response.send_message(embeds=embeds)
 @scheduleGroup.command(name='teacher', description='Get schedule for teacher')
@@ -254,32 +232,7 @@ async def teacherScheduleCommand(interaction : interactions.Interaction, teacher
         # noinspection PyUnresolvedReferences
         await interaction.response.send_message("No appointments found.")
     appointmentsSorted = sort_appointments(appointments)
-    embeds = []
-    locations = {}
-    for week in appointmentsSorted:
-        embedvar = discord.Embed(title="Schedule", description=f"Schedule for {teacher[7]} ({teacher[1]}) for week {week}", color=2424576, timestamp=interaction.created_at)
-        for day in appointmentsSorted[week]:
-            value = ""
-            for appointment in appointmentsSorted[week][day]:
-                timeslot = appointment[4]
-                subject = ast.literal_eval(appointment[39])[0]
-                groups = ast.literal_eval(appointment[8])
-                location = ast.literal_eval(appointment[9])[0]
-                if location not in locations:
-                    locations[location] = dbCursor.execute("SELECT * FROM LOCATIONS WHERE id = ?", (location,)).fetchone()[1]
-                location = locations[location]
-                groupNames = []
-                for group in groups:
-                    dbCursor.execute("SELECT * FROM GROUPS WHERE id = ?", (group,))
-                    groupName = dbCursor.fetchone()[5]
-                    groupNames.append(groupName)
-                if appointment[12] == 1: # Cancelled
-                    value += f"- :no_entry: :number_{timeslot}: ~~{subject} - {', '.join(groupNames)} - {location}~~\n"
-                else:
-                    value += f"- :number_{timeslot}: {subject} - {', '.join(groupNames)} - {location}\n"
-            embedvar.add_field(name=f"{day}", value=value, inline=True)
-        embedvar.set_footer(text=f"ZermeloUtils ({school})")
-        embeds.append(embedvar)
+    embeds = appointments_embeds(teacher, appointmentsSorted, AppEmbedType.TEACHER, interaction)
     # noinspection PyUnresolvedReferences
     await interaction.response.send_message(embeds=embeds)
 
