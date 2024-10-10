@@ -206,6 +206,7 @@ async def studentScheduleCommand(interaction : interactions.Interaction, student
     embeds = appointments_embeds(student, appointmentsSorted, AppEmbedType.STUDENT, interaction)
     # noinspection PyUnresolvedReferences
     await interaction.response.send_message(embeds=embeds)
+# teacher
 @scheduleGroup.command(name='teacher', description='Get schedule for teacher')
 @describe(teacherId='Teacher id', week='Week number', extraWeeks='Extra weeks')
 @rename(teacherId='teacher', week='week', extraWeeks='extraweeks')
@@ -233,6 +234,36 @@ async def teacherScheduleCommand(interaction : interactions.Interaction, teacher
         await interaction.response.send_message("No appointments found.")
     appointmentsSorted = sort_appointments(appointments)
     embeds = appointments_embeds(teacher, appointmentsSorted, AppEmbedType.TEACHER, interaction)
+    # noinspection PyUnresolvedReferences
+    await interaction.response.send_message(embeds=embeds)
+# location
+@scheduleGroup.command(name='location', description='Get schedule for location')
+@describe(location='Location', week='Week number', extraWeeks='Extra weeks')
+@rename(location='location', week='week', extraWeeks='extraweeks')
+async def locationScheduleCommand(interaction : interactions.Interaction, location : str, week : int, extraWeeks : int = 0):
+    dbCursor.execute("SELECT * FROM LOCATIONS WHERE name = ?", (location,))
+    location = dbCursor.fetchone()
+    if location is None:
+        # noinspection PyUnresolvedReferences
+        await interaction.response.send_message("Location not found")
+        return
+    appointments = []
+    weekErrors = []
+    for week in range(week, week + extraWeeks + 1):
+        if not check_if_week_exists(week):
+            weekErrors.append(str(week))
+            continue
+        appointmentsCursor.execute(f"SELECT * FROM '{week}' WHERE locationsOfBranch LIKE '%{location[0]}%' AND valid = 1")
+        appointments += appointmentsCursor.fetchall()
+    if len(weekErrors) != 0:
+        # noinspection PyUnresolvedReferences
+        await interaction.response.send_message(f"Error: Week(s) {', '.join(weekErrors)} do(es) not exist.")
+        return
+    if len(appointments) == 0:
+        # noinspection PyUnresolvedReferences
+        await interaction.response.send_message("No appointments found.")
+    appointmentsSorted = sort_appointments(appointments)
+    embeds = appointments_embeds(location, appointmentsSorted, AppEmbedType.LOCATION, interaction)
     # noinspection PyUnresolvedReferences
     await interaction.response.send_message(embeds=embeds)
 
