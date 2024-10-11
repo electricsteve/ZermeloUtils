@@ -83,10 +83,9 @@ async def locationsCommand(interaction : interactions.Interaction):
         for i in range(remaining):
             locationLists.append("")
     locationLists = list(splitList(locationLists, len(locationLists) // 3))
-    embedvar = discord.Embed(title="Locations", description=f"All locations (classrooms, gym, etc.)", color=2424576, timestamp=interaction.created_at)
+    embedvar = default_embed("Locations", f"All locations (classrooms, gym, etc.)", 2424576, interaction)
     for locationList in locationLists:
         embedvar.add_field(name="", value="\n".join(locationList), inline=True)
-    embedvar.set_footer(text=f"ZermeloUtils ({school})")
     # noinspection PyUnresolvedReferences
     await interaction.response.send_message(embed=embedvar)
 # Teachers
@@ -113,10 +112,9 @@ async def teachersCommand(interaction : interactions.Interaction):
         for i in range(remaining):
             teacherLists.append("")
     teacherLists = list(splitList(teacherLists, len(teacherLists) // 6))
-    embedvar = discord.Embed(title="Teachers", description=f"All teachers", color=2424576, timestamp=interaction.created_at)
+    embedvar = default_embed("Teachers", f"All teachers", 2424576, interaction)
     for teacherList in teacherLists:
         embedvar.add_field(name="", value="\n".join(teacherList), inline=True)
-    embedvar.set_footer(text=f"ZermeloUtils ({school})")
     # noinspection PyUnresolvedReferences
     await interaction.response.send_message(embed=embedvar)
 # incommon
@@ -134,11 +132,10 @@ async def incommonCommand(interaction : interactions.Interaction, student1 : str
         await interaction.response.send_message("One of the students is not in the database")
         return
     common = in_common(students[0], students[1])
-    embedvar = discord.Embed(title="In Common", description=f"Groups in common between {students[0][6]} ({students[0][1]}) and {students[1][6]} ({students[1][1]})", color=2424576, timestamp=interaction.created_at)
+    embedvar = default_embed("In common", f"Lessons and groups {students[0][6]} and {students[1][6]} have in common", 2424576, interaction)
     embedvar.description += f"\nNumber of groups in common: {len(common)}"
     for group in common:
         embedvar.description += f"\n- {group}"
-    embedvar.set_footer(text=f"ZermeloUtils ({school})")
     # noinspection PyUnresolvedReferences
     await interaction.response.send_message(embed=embedvar)
 # Search
@@ -156,7 +153,7 @@ async def searchCommand(interaction : interactions.Interaction, searchInput : st
         # noinspection PyUnresolvedReferences
         await interaction.response.send_message("No results found")
         return
-    embedvar = discord.Embed(title="Search", description=f"Search results for '{searchInput}'", color=2424576, timestamp=interaction.created_at)
+    embedvar = default_embed("Search", f"Search results for '{searchInput}'", 2424576, interaction)
     embedvar.description += f"\nNumber of students found: {len(students)}"
     for student in students:
         embedvar.description += f"\n- {student[6]} ({student[1]})"
@@ -166,7 +163,6 @@ async def searchCommand(interaction : interactions.Interaction, searchInput : st
     embedvar.description += f"\nNumber of locations found: {len(locations)}"
     for location in locations:
         embedvar.description += f"\n- {location[1]}"
-    embedvar.set_footer(text=f"ZermeloUtils ({school})")
     # noinspection PyUnresolvedReferences
     await interaction.response.send_message(embed=embedvar)
 # schedules
@@ -266,6 +262,16 @@ async def locationScheduleCommand(interaction : interactions.Interaction, locati
     embeds = appointments_embeds(location, appointmentsSorted, AppEmbedType.LOCATION, interaction)
     # noinspection PyUnresolvedReferences
     await interaction.response.send_message(embeds=embeds)
+
+@tree.command(name='error-test', guild=discord.Object(id=test_guild))
+async def errorTest(interaction : interactions.Interaction):
+    raise Exception("Test error")
+
+@tree.error
+async def on_error(interaction, error):
+    embedvar = error_embed(error, interaction)
+    # noinspection PyUnresolvedReferences
+    await interaction.response.send_message(embed=embedvar)
 
 @client.event
 async def on_ready():

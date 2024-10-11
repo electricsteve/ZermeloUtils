@@ -1,8 +1,11 @@
+import discord.interactions
 from discord import Embed
 from dotenv import find_dotenv, get_key
 from enum import Enum
 from ast import literal_eval
 import sqlite3
+import traceback
+import os
 
 dotenv_path = find_dotenv()
 school = get_key(dotenv_path, 'SCHOOL')
@@ -12,6 +15,11 @@ dbCursor = dbConn.cursor()
 
 locations = {}
 groups = {}
+
+if not os.path.isdir("./logs"):
+    os.makedirs("./logs")
+if not os.path.isdir("./logs/errors"):
+    os.makedirs("./logs/errors")
 
 class AppEmbedType(Enum):
     TEACHER = 1
@@ -23,20 +31,24 @@ def default_embed(title, description, color, interaction):
     embedVar.set_footer(text=f"ZermeloUtils ({school})")
     return embedVar
 
-def error_embed(error, interaction):
+def error_embed(error, interaction : discord.interactions.Interaction):
+    st = traceback.format_exc()
+    fileName = f"./logs/errors/error{interaction.created_at.strftime('-%Y_%m_%d-%H_%M_%S')}.log"
+    with open(fileName, "w") as f:
+        f.write(st)
     title = "Error"
-    description = f"An error occurred: {error}"
+    description = f"An error occurred: {error}\nFull stack trace saved to file: {fileName}."
     return default_embed(title, description, 0xff0000, interaction)
 
 # Embed for appointments for week
-def appointments_embed(object, appointments, week, appEmbedType : AppEmbedType, interaction):
+def appointments_embed(obj, appointments, week, appEmbedType : AppEmbedType, interaction):
     var1 = ""
     if appEmbedType == AppEmbedType.TEACHER:
-        var1 = f"{object[7]} ({object[1]})"
+        var1 = f"{obj[7]} ({obj[1]})"
     elif appEmbedType == AppEmbedType.STUDENT:
-        var1 = f"{object[6]} ({object[1]})"
+        var1 = f"{obj[6]} ({obj[1]})"
     elif appEmbedType == AppEmbedType.LOCATION:
-        var1 = f"{object[1]}"
+        var1 = f"{obj[1]}"
     embedVar = default_embed("Schedule", f"Schedule for {var1} for week {week}", 2424576, interaction)
     for day in appointments:
         value = ""
