@@ -117,6 +117,23 @@ async def teachersCommand(interaction : interactions.Interaction):
         embedvar.add_field(name="", value="\n".join(teacherList), inline=True)
     # noinspection PyUnresolvedReferences
     await interaction.response.send_message(embed=embedvar)
+# Groups
+@tree.command(name='groups', description='Get all groups', guild=discord.Object(id=test_guild))
+async def groupsCommand(interaction : interactions.Interaction):
+    dbCursor.execute("SELECT * FROM GROUPS")
+    groupLists = dbCursor.fetchall()
+    groupLists.sort(key=lambda x: x[5])
+    groupLists = [(i[5]) for i in groupLists]
+    remaining = len(groupLists) % 3
+    if remaining != 0:
+        for i in range(remaining):
+            groupLists.append("")
+    groupLists = list(splitList(groupLists, len(groupLists) // 3))
+    embedvar = default_embed("Groups", f"All groups", 2424576, interaction)
+    for groupList in groupLists:
+        embedvar.add_field(name="", value="\n".join(groupList), inline=True)
+    # noinspection PyUnresolvedReferences
+    await interaction.response.send_message(embed=embedvar)
 # incommon
 @tree.command(name='incommon', description='Get lessons and groups 2 people have in common', guild=discord.Object(id=test_guild))
 @describe(student1='First student', student2='Second student')
