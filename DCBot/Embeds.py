@@ -1,5 +1,5 @@
 import discord.interactions
-from discord import Embed
+from discord import Embed, ui
 from dotenv import find_dotenv, get_key
 from enum import Enum
 from ast import literal_eval
@@ -26,12 +26,36 @@ class AppEmbedType(Enum):
     STUDENT = 2
     LOCATION = 3
 
+class ListEmbedView(ui.View):
+    def __init__(self, embeds):
+        super().__init__()
+        self.embeds = embeds
+        self.current = 0
+
+    @ui.button(label="Previous", style=discord.ButtonStyle.blurple, disabled=True)
+    async def prev(self, interaction, button):
+        if self.current > 0:
+            self.current -= 1
+            self.children[1].disabled = False
+            if self.current == 0:
+                button.disabled = True
+            await interaction.response.edit_message(embed=self.embeds[self.current], view=self)
+
+    @ui.button(label="Next", style=discord.ButtonStyle.blurple)
+    async def next(self, interaction, button):
+        if self.current < len(self.embeds) - 1:
+            self.current += 1
+            self.children[0].disabled = False
+            if self.current == len(self.embeds) - 1:
+                button.disabled = True
+            await interaction.response.edit_message(embed=self.embeds[self.current], view=self)
+
 def default_embed(title, description, color, interaction):
     embedVar = Embed(title=title, description=description, color=color, timestamp=interaction.created_at)
     embedVar.set_footer(text=f"ZermeloUtils ({school})")
     return embedVar
 
-def list_embed(title, description, list, interaction, listLimit=1024, fieldTitle=False):
+def list_embed(title, description, textList, interaction, listLimit=1024, fieldTitle=False):
     def get_field_title():
         if fieldTitle:
             return f"{i + 1 - len(Field.split('\n'))} - {i + 1}"
@@ -42,9 +66,9 @@ def list_embed(title, description, list, interaction, listLimit=1024, fieldTitle
     EmbedCharLen = len(embedVar.description) + len(embedVar.title) + len(embedVar.footer.text)
     FieldCharLen = 0
     Field = ""
-    for i in range(len(list)):
-        FieldCharLen += len(list[i]) + 2
-        EmbedCharLen += len(list[i]) + 2
+    for i in range(len(textList)):
+        FieldCharLen += len(textList[i]) + 2
+        EmbedCharLen += len(textList[i]) + 2
         if EmbedCharLen >= 6000:
             print(EmbedCharLen)
             print(FieldCharLen)
@@ -53,20 +77,22 @@ def list_embed(title, description, list, interaction, listLimit=1024, fieldTitle
             embeds.append(embedVar)
             embedVar = default_embed(title, description, 2424576, interaction)
             EmbedCharLen = len(embedVar.description) + len(embedVar.title) + len(embedVar.footer.text)
-            FieldCharLen = len(list[i])
-            Field = list[i]
+            FieldCharLen = len(textList[i])
+            Field = textList[i]
         else:
             if FieldCharLen >= 1024 or len(Field.split("\n")) >= listLimit:
                 embedVar.add_field(name=get_field_title(), value=Field, inline=True)
-                FieldCharLen = len(list[i])
-                Field = list[i]
+                FieldCharLen = len(textList[i])
+                Field = textList[i]
             elif Field == "":
-                Field = list[i]
+                Field = textList[i]
             else:
-                Field += "\n" + list[i]
+                Field += "\n" + textList[i]
     embedVar.add_field(name=get_field_title(), value=Field, inline=True)
     embeds.append(embedVar)
-    return embeds
+    if len(embeds) > 1:
+        return embeds[0], ListEmbedView(embeds)
+    return embeds[0], None
 
 def error_embed(error, interaction : discord.interactions.Interaction):
     st = traceback.format_exc()

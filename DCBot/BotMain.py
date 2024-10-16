@@ -79,18 +79,13 @@ async def studentsCommand(interaction : interactions.Interaction):
     studentAmount = len(studentList)
     studentList.sort(key=lambda x: x[6])
     studentList = [(i[6]) for i in studentList]
-    embeds = list_embed("Students", f"All students\nNumber of students: {studentAmount}", studentList, interaction, listLimit=50)
-    print(len(embeds))
-    print(type(embeds))
-    print(embeds)
-    for embed in embeds:
-        print("Embed")
-        print(len(embed.title) + len(embed.description) + len(embed.footer.text))
-        for field in embed.fields:
-            print(len(field.name) + len(field.value))
-        print(embed)
-    # noinspection PyUnresolvedReferences
-    await interaction.response.send_message(embeds=embeds)
+    embed, view = list_embed("Students", f"All students\nNumber of students: {studentAmount}", studentList, interaction, listLimit=50)
+    if view is not None:
+        # noinspection PyUnresolvedReferences
+        await interaction.response.send_message(embed=embed, view=view)
+    else:
+        # noinspection PyUnresolvedReferences
+        await interaction.response.send_message(embeds=embeds)
 # locations
 @tree.command(name='locations', description='Get all locations', guild=discord.Object(id=test_guild))
 async def locationsCommand(interaction : interactions.Interaction):
@@ -99,9 +94,13 @@ async def locationsCommand(interaction : interactions.Interaction):
     locationAmount = len(locationList)
     locationList.sort(key=lambda x: x[1])
     locationList = [(i[1]) for i in locationList]
-    embeds = list_embed("Locations", f"All locations\nNumber of locations: {locationAmount}", locationList, interaction, listLimit=50, fieldTitle=True)
-    # noinspection PyUnresolvedReferences
-    await interaction.response.send_message(embeds=embeds)
+    embed, view = list_embed("Locations", f"All locations\nNumber of locations: {locationAmount}", locationList, interaction, listLimit=50, fieldTitle=True)
+    if view is not None:
+        # noinspection PyUnresolvedReferences
+        await interaction.response.send_message(embed=embed, view=view)
+    else:
+        # noinspection PyUnresolvedReferences
+        await interaction.response.send_message(embed=embed)
 # Teachers
 @tree.command(name='teachers', description='Get all teachers', guild=discord.Object(id=test_guild))
 async def teachersCommand(interaction : interactions.Interaction):
@@ -122,9 +121,13 @@ async def teachersCommand(interaction : interactions.Interaction):
             name += f" ({teacher[1]})"
         return name
     teacherList = [getStr(i) for i in teacherList]
-    embeds = list_embed("Teachers", f"All teachers\nNumber of teachers: {teacherAmount}", teacherList, interaction, listLimit=50)
-    # noinspection PyUnresolvedReferences
-    await interaction.response.send_message(embeds=embeds)
+    embed, view = list_embed("Teachers", f"All teachers\nNumber of teachers: {teacherAmount}", teacherList, interaction, listLimit=50)
+    if view is not None:
+        # noinspection PyUnresolvedReferences
+        await interaction.response.send_message(embed=embed, view=view)
+    else:
+        # noinspection PyUnresolvedReferences
+        await interaction.response.send_message(embed=embed)
 # Groups
 @tree.command(name='groups', description='Get all groups', guild=discord.Object(id=test_guild))
 async def groupsCommand(interaction : interactions.Interaction):
@@ -134,9 +137,13 @@ async def groupsCommand(interaction : interactions.Interaction):
     groupList.sort(key=lambda x: x[5])
     groupList = [(i[5]) for i in groupList]
     groupList = [', '.join(x) for x in zip(groupList[::2], groupList[1::2])]
-    embeds = list_embed("Groups", f"All groups\nNumber of groups: {groupAmount}", groupList, interaction, listLimit=50)
-    # noinspection PyUnresolvedReferences
-    await interaction.response.send_message(embeds=embeds)
+    embed, view = list_embed("Groups", f"All groups\nNumber of groups: {groupAmount}", groupList, interaction, listLimit=50)
+    if view is not None:
+        # noinspection PyUnresolvedReferences
+        await interaction.response.send_message(embed=embed, view=view)
+    else:
+        # noinspection PyUnresolvedReferences
+        await interaction.response.send_message(embed=embed)
 # incommon
 @tree.command(name='incommon', description='Get lessons and groups 2 people have in common', guild=discord.Object(id=test_guild))
 @describe(student1='First student', student2='Second student')
