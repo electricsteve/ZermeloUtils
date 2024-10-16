@@ -12,7 +12,7 @@ from dotenv import find_dotenv, get_key
 
 sys.path.append(abspath(dirname(dirname(__file__))))
 from Classes.Student import Student
-from DCBot.Embeds import AppEmbedType, appointments_embed, appointments_embeds, default_embed, error_embed
+from DCBot.Embeds import AppEmbedType, appointments_embed, appointments_embeds, default_embed, error_embed, list_embed
 
 class WeekDay(Enum):
     Monday = 0
@@ -71,34 +71,49 @@ appointmentsCursor = appointmentsConn.cursor()
 @tree.command(name='ping', description='Get bot ping', guild=discord.Object(id=test_guild))
 async def ping(interaction):
     await interaction.response.send_message(f'PONG! Latency: {str(int(client.latency * 1000))}ms')
+# Students (ah HELL NAH)
+@tree.command(name='students', description='Get all students', guild=discord.Object(id=test_guild))
+async def studentsCommand(interaction : interactions.Interaction):
+    dbCursor.execute("SELECT * FROM STUDENTS")
+    studentList = dbCursor.fetchall()
+    studentAmount = len(studentList)
+    studentList.sort(key=lambda x: x[6])
+    studentList = [(i[6]) for i in studentList]
+    embeds = list_embed("Students", f"All students\nNumber of students: {studentAmount}", studentList, interaction, listLimit=50)
+    print(len(embeds))
+    print(type(embeds))
+    print(embeds)
+    for embed in embeds:
+        print("Embed")
+        print(len(embed.title) + len(embed.description) + len(embed.footer.text))
+        for field in embed.fields:
+            print(len(field.name) + len(field.value))
+        print(embed)
+    # noinspection PyUnresolvedReferences
+    await interaction.response.send_message(embeds=embeds)
 # locations
 @tree.command(name='locations', description='Get all locations', guild=discord.Object(id=test_guild))
 async def locationsCommand(interaction : interactions.Interaction):
     dbCursor.execute("SELECT * FROM LOCATIONS")
-    locationLists = dbCursor.fetchall()
-    locationLists.sort(key=lambda x: x[1])
-    locationLists = [(i[1]) for i in locationLists]
-    remaining = len(locationLists) % 3
-    if remaining != 0:
-        for i in range(remaining):
-            locationLists.append("")
-    locationLists = list(splitList(locationLists, len(locationLists) // 3))
-    embedvar = default_embed("Locations", f"All locations (classrooms, gym, etc.)", 2424576, interaction)
-    for locationList in locationLists:
-        embedvar.add_field(name="", value="\n".join(locationList), inline=True)
+    locationList = dbCursor.fetchall()
+    locationAmount = len(locationList)
+    locationList.sort(key=lambda x: x[1])
+    locationList = [(i[1]) for i in locationList]
+    embeds = list_embed("Locations", f"All locations\nNumber of locations: {locationAmount}", locationList, interaction, listLimit=50, fieldTitle=True)
     # noinspection PyUnresolvedReferences
-    await interaction.response.send_message(embed=embedvar)
+    await interaction.response.send_message(embeds=embeds)
 # Teachers
 @tree.command(name='teachers', description='Get all teachers', guild=discord.Object(id=test_guild))
 async def teachersCommand(interaction : interactions.Interaction):
     dbCursor.execute("SELECT * FROM TEACHERS")
-    teacherLists = dbCursor.fetchall()
-    for i in range(len(teacherLists)):
-        if teacherLists[i][7] is None:
-            teacherLists[i] = list(teacherLists[i])
-            teacherLists[i][7] = teacherLists[i][1]
-            teacherLists[i] = tuple(teacherLists[i])
-    teacherLists.sort(key=lambda x: x[7])
+    teacherList = dbCursor.fetchall()
+    teacherAmount = len(teacherList)
+    for i in range(len(teacherList)):
+        if teacherList[i][7] is None:
+            teacherList[i] = list(teacherList[i])
+            teacherList[i][7] = teacherList[i][1]
+            teacherList[i] = tuple(teacherList[i])
+    teacherList.sort(key=lambda x: x[7])
     def getStr(teacher):
         name = teacher[7]
         if teacher[12] is not None:
@@ -106,34 +121,22 @@ async def teachersCommand(interaction : interactions.Interaction):
         if teacher[1] is not None:
             name += f" ({teacher[1]})"
         return name
-    teacherLists = [getStr(i) for i in teacherLists]
-    remaining = len(teacherLists) % 6
-    if remaining != 0:
-        for i in range(remaining):
-            teacherLists.append("")
-    teacherLists = list(splitList(teacherLists, len(teacherLists) // 6))
-    embedvar = default_embed("Teachers", f"All teachers", 2424576, interaction)
-    for teacherList in teacherLists:
-        embedvar.add_field(name="", value="\n".join(teacherList), inline=True)
+    teacherList = [getStr(i) for i in teacherList]
+    embeds = list_embed("Teachers", f"All teachers\nNumber of teachers: {teacherAmount}", teacherList, interaction, listLimit=50)
     # noinspection PyUnresolvedReferences
-    await interaction.response.send_message(embed=embedvar)
+    await interaction.response.send_message(embeds=embeds)
 # Groups
 @tree.command(name='groups', description='Get all groups', guild=discord.Object(id=test_guild))
 async def groupsCommand(interaction : interactions.Interaction):
     dbCursor.execute("SELECT * FROM GROUPS")
-    groupLists = dbCursor.fetchall()
-    groupLists.sort(key=lambda x: x[5])
-    groupLists = [(i[5]) for i in groupLists]
-    remaining = len(groupLists) % 3
-    if remaining != 0:
-        for i in range(remaining):
-            groupLists.append("")
-    groupLists = list(splitList(groupLists, len(groupLists) // 3))
-    embedvar = default_embed("Groups", f"All groups", 2424576, interaction)
-    for groupList in groupLists:
-        embedvar.add_field(name="", value="\n".join(groupList), inline=True)
+    groupList = dbCursor.fetchall()
+    groupAmount = len(groupList)
+    groupList.sort(key=lambda x: x[5])
+    groupList = [(i[5]) for i in groupList]
+    groupList = [', '.join(x) for x in zip(groupList[::2], groupList[1::2])]
+    embeds = list_embed("Groups", f"All groups\nNumber of groups: {groupAmount}", groupList, interaction, listLimit=50)
     # noinspection PyUnresolvedReferences
-    await interaction.response.send_message(embed=embedvar)
+    await interaction.response.send_message(embeds=embeds)
 # incommon
 @tree.command(name='incommon', description='Get lessons and groups 2 people have in common', guild=discord.Object(id=test_guild))
 @describe(student1='First student', student2='Second student')

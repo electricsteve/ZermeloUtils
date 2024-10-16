@@ -31,6 +31,43 @@ def default_embed(title, description, color, interaction):
     embedVar.set_footer(text=f"ZermeloUtils ({school})")
     return embedVar
 
+def list_embed(title, description, list, interaction, listLimit=1024, fieldTitle=False):
+    def get_field_title():
+        if fieldTitle:
+            return f"{i + 1 - len(Field.split('\n'))} - {i + 1}"
+        else:
+            return f""
+    embeds = []
+    embedVar = default_embed(title, description, 2424576, interaction)
+    EmbedCharLen = len(embedVar.description) + len(embedVar.title) + len(embedVar.footer.text)
+    FieldCharLen = 0
+    Field = ""
+    for i in range(len(list)):
+        FieldCharLen += len(list[i]) + 2
+        EmbedCharLen += len(list[i]) + 2
+        if EmbedCharLen >= 6000:
+            print(EmbedCharLen)
+            print(FieldCharLen)
+            print("Too long")
+            embedVar.add_field(name=get_field_title(), value=Field, inline=True)
+            embeds.append(embedVar)
+            embedVar = default_embed(title, description, 2424576, interaction)
+            EmbedCharLen = len(embedVar.description) + len(embedVar.title) + len(embedVar.footer.text)
+            FieldCharLen = len(list[i])
+            Field = list[i]
+        else:
+            if FieldCharLen >= 1024 or len(Field.split("\n")) >= listLimit:
+                embedVar.add_field(name=get_field_title(), value=Field, inline=True)
+                FieldCharLen = len(list[i])
+                Field = list[i]
+            elif Field == "":
+                Field = list[i]
+            else:
+                Field += "\n" + list[i]
+    embedVar.add_field(name=get_field_title(), value=Field, inline=True)
+    embeds.append(embedVar)
+    return embeds
+
 def error_embed(error, interaction : discord.interactions.Interaction):
     st = traceback.format_exc()
     fileName = f"./logs/errors/error{interaction.created_at.strftime('-%Y_%m_%d-%H_%M_%S')}.log"
