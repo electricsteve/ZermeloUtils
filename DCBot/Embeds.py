@@ -70,9 +70,6 @@ def list_embed(title, description, textList, interaction, listLimit=1024, fieldT
         FieldCharLen += len(textList[i]) + 2
         EmbedCharLen += len(textList[i]) + 2
         if EmbedCharLen >= 6000:
-            print(EmbedCharLen)
-            print(FieldCharLen)
-            print("Too long")
             embedVar.add_field(name=get_field_title(), value=Field, inline=True)
             embeds.append(embedVar)
             embedVar = default_embed(title, description, 2424576, interaction)
