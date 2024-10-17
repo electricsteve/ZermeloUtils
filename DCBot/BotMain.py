@@ -79,7 +79,7 @@ async def studentsCommand(interaction : interactions.Interaction):
     studentAmount = len(studentList)
     studentList.sort(key=lambda x: x[6])
     studentList = [(i[6]) for i in studentList]
-    embed, view = list_embed("Students", f"All students\nNumber of students: {studentAmount}", studentList, interaction, listLimit=50)
+    embed, view = list_embed("Students", f"All students\nNumber of students: {studentAmount}", studentList, interaction, fieldListLimit=50, fieldLimit=3)
     if view is not None:
         # noinspection PyUnresolvedReferences
         await interaction.response.send_message(embed=embed, view=view)
@@ -94,7 +94,7 @@ async def locationsCommand(interaction : interactions.Interaction):
     locationAmount = len(locationList)
     locationList.sort(key=lambda x: x[1])
     locationList = [(i[1]) for i in locationList]
-    embed, view = list_embed("Locations", f"All locations\nNumber of locations: {locationAmount}", locationList, interaction, listLimit=50, fieldTitle=True)
+    embed, view = list_embed("Locations", f"All locations\nNumber of locations: {locationAmount}", locationList, interaction, fieldListLimit=50, fieldTitle=True)
     if view is not None:
         # noinspection PyUnresolvedReferences
         await interaction.response.send_message(embed=embed, view=view)
@@ -121,7 +121,7 @@ async def teachersCommand(interaction : interactions.Interaction):
             name += f" ({teacher[1]})"
         return name
     teacherList = [getStr(i) for i in teacherList]
-    embed, view = list_embed("Teachers", f"All teachers\nNumber of teachers: {teacherAmount}", teacherList, interaction, listLimit=50)
+    embed, view = list_embed("Teachers", f"All teachers\nNumber of teachers: {teacherAmount}", teacherList, interaction, fieldListLimit=50)
     if view is not None:
         # noinspection PyUnresolvedReferences
         await interaction.response.send_message(embed=embed, view=view)
@@ -137,7 +137,7 @@ async def groupsCommand(interaction : interactions.Interaction):
     groupList.sort(key=lambda x: x[5])
     groupList = [(i[5]) for i in groupList]
     groupList = [', '.join(x) for x in zip(groupList[::2], groupList[1::2])]
-    embed, view = list_embed("Groups", f"All groups\nNumber of groups: {groupAmount}", groupList, interaction, listLimit=50)
+    embed, view = list_embed("Groups", f"All groups\nNumber of groups: {groupAmount}", groupList, interaction, fieldListLimit=50)
     if view is not None:
         # noinspection PyUnresolvedReferences
         await interaction.response.send_message(embed=embed, view=view)

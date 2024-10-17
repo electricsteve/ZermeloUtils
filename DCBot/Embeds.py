@@ -27,9 +27,9 @@ class AppEmbedType(Enum):
     LOCATION = 3
 
 class ListEmbedView(ui.View):
-    def __init__(self, embeds):
+    def __init__(self, embeds : list[Embed]):
         super().__init__()
-        self.embeds = embeds
+        self.embeds = [embed.set_author(name=f"Page {embeds.index(embed) + 1} out of {len(embeds)}") for embed in embeds]
         self.current = 0
 
     @ui.button(label="Previous", style=discord.ButtonStyle.blurple, disabled=True)
@@ -55,7 +55,7 @@ def default_embed(title, description, color, interaction):
     embedVar.set_footer(text=f"ZermeloUtils ({school})")
     return embedVar
 
-def list_embed(title, description, textList, interaction, listLimit=1024, fieldTitle=False):
+def list_embed(title, description, textList, interaction, fieldListLimit=1024, fieldTitle=False, fieldLimit=25):
     def get_field_title():
         if fieldTitle:
             return f"{i + 1 - len(Field.split('\n'))} - {i + 1}"
@@ -77,8 +77,12 @@ def list_embed(title, description, textList, interaction, listLimit=1024, fieldT
             FieldCharLen = len(textList[i])
             Field = textList[i]
         else:
-            if FieldCharLen >= 1024 or len(Field.split("\n")) >= listLimit:
+            if FieldCharLen >= 1024 or len(Field.split("\n")) >= fieldListLimit:
                 embedVar.add_field(name=get_field_title(), value=Field, inline=True)
+                if len(embedVar.fields) >= fieldLimit:
+                    embeds.append(embedVar)
+                    embedVar = default_embed(title, description, 2424576, interaction)
+                    EmbedCharLen = len(embedVar.description) + len(embedVar.title) + len(embedVar.footer.text)
                 FieldCharLen = len(textList[i])
                 Field = textList[i]
             elif Field == "":
