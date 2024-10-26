@@ -87,7 +87,7 @@ def saveAppointments(appointmentObjectList):
 
 massAppointmentObjectList = {}
 
-def ImportAppointments(user, startWeek, endWeek):
+def ImportAppointments(user, startWeek, endWeek, lastModified : int = None):
     if startWeek <= 33:
         if not mass:
             userObject = dbCursor.execute(f"SELECT departmentOfBranchCode FROM STUDENTS WHERE student = {user}").fetchone()
@@ -98,11 +98,11 @@ def ImportAppointments(user, startWeek, endWeek):
             if massUsers[user]:
                 startWeek = 34
     try:
-        list_of_appointments = Zermelo.get_appointments(startWeek, endWeek, user)
+        list_of_appointments = Zermelo.get_appointments(startWeek, endWeek, user, modifiedSince=lastModified)
     except Exception as e:
         if "403" in str(e):
             # Try again, but with week 34
-            list_of_appointments = Zermelo.get_appointments(34, endWeek, user)
+            list_of_appointments = Zermelo.get_appointments(34, endWeek, user, modifiedSince=lastModified)
         else:
             raise e
     print("Number of appointments: ", len(list_of_appointments))
