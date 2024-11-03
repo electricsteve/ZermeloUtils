@@ -57,3 +57,6 @@ class Student:
                 c.execute("SELECT extendedName FROM GROUPS WHERE id=?", (group,))
                 common.append(c.fetchone()[0])
         return common
+
+    def get_name(self):
+        return self.fullName

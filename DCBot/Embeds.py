@@ -55,6 +55,9 @@ def default_embed(title, description, color, interaction):
     embedVar.set_footer(text=f"ZermeloUtils ({school})")
     return embedVar
 
+def processing_embed(interaction):
+    return default_embed("Processing", "Processing your request...", 2424576, interaction)
+
 def list_embed(title, description, textList, interaction, fieldListLimit=1024, fieldTitle=False, fieldLimit=25):
     def get_field_title():
         if fieldTitle:
@@ -95,13 +98,16 @@ def list_embed(title, description, textList, interaction, fieldListLimit=1024, f
         return embeds[0], ListEmbedView(embeds)
     return embeds[0], None
 
-def error_embed(error, interaction : discord.interactions.Interaction):
+def exception_embed(exception, interaction : discord.interactions.Interaction):
     st = traceback.format_exc()
     fileName = f"./logs/errors/error{interaction.created_at.strftime('-%Y_%m_%d-%H_%M_%S')}.log"
     with open(fileName, "w") as f:
         f.write(st)
     title = "Error"
-    description = f"An error occurred: {error}\nFull stack trace saved to file: {fileName}."
+    description = f"An error occurred: {exception}\nFull stack trace saved to file: {fileName}."
+    return default_embed(title, description, 0xff0000, interaction)
+
+def error_embed(title, description, interaction):
     return default_embed(title, description, 0xff0000, interaction)
 
 # Embed for appointments for week

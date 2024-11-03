@@ -1,18 +1,32 @@
 import ast
 import sqlite3
 import sys
-from datetime import datetime
+import datetime
+import json
+
 from enum import Enum
 from os.path import dirname, abspath
 
 import discord
-from discord import interactions
+from discord import interactions, InteractionResponded
 from discord.app_commands import guilds, describe, CommandTree, Group, rename
+from discord.ext import tasks
 from dotenv import find_dotenv, get_key
 
 sys.path.append(abspath(dirname(dirname(__file__))))
 from Classes.Student import Student
-from DCBot.Embeds import AppEmbedType, appointments_embed, appointments_embeds, default_embed, error_embed, list_embed
+from DCBot.Embeds import AppEmbedType, appointments_embeds, default_embed, exception_embed, list_embed, error_embed
+from DCBot import Embeds
+from UpdateSystem import TrackedUserManager
+from Classes import Utils
+from ImportFromZermelo import ImportTrackedUserAppointments
+from Classes.Appointment import Appointment
+
+class CustomEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, Appointment):
+            return obj.__dict__
+        return json.JSONEncoder.default(self, obj)
 
 class WeekDay(Enum):
     Monday = 0
@@ -36,7 +50,7 @@ def sort_appointments(appointmentsInput):
     appointmentsOutput = {}
     appointmentsInput.sort(key=lambda x: x[2])
     for appointment in appointmentsInput:
-        start = datetime.fromtimestamp(appointment[2])
+        start = datetime.datetime.fromtimestamp(appointment[2])
         week = start.isocalendar()[1]
         day = WeekDay(start.weekday()).name
         if week not in appointmentsOutput:
@@ -55,6 +69,36 @@ dotenv_path = find_dotenv()
 token = get_key(dotenv_path, 'DISCORD_TOKEN')
 test_guild = get_key(dotenv_path, 'TEST_GUILD')
 school = get_key(dotenv_path, 'SCHOOL')
+# emojis, will be replaced
+minus = get_key(dotenv_path, 'MINUS')
+plus = get_key(dotenv_path, 'PLUS')
+nine = get_key(dotenv_path, 'NINE')
+eight = get_key(dotenv_path, 'EIGHT')
+seven = get_key(dotenv_path, 'SEVEN')
+six = get_key(dotenv_path, 'SIX')
+five = get_key(dotenv_path, 'FIVE')
+four = get_key(dotenv_path, 'FOUR')
+three = get_key(dotenv_path, 'THREE')
+two = get_key(dotenv_path, 'TWO')
+one = get_key(dotenv_path, 'ONE')
+
+update_channel = get_key(dotenv_path, 'UPDATE_CHANNEL')
+
+# times for the tasks, times below are utc, but are intended for cest
+trackedUsersUpdateTimes = [
+    datetime.time(hour=6),
+    datetime.time(hour=7),
+    datetime.time(hour=8),
+    datetime.time(hour=9),
+    datetime.time(hour=10),
+    datetime.time(hour=11),
+    datetime.time(hour=12),
+    datetime.time(hour=13),
+    datetime.time(hour=14),
+    datetime.time(hour=19),
+    datetime.time(hour=21),
+    datetime.time(hour=23),
+]
 
 intents = discord.Intents.default()
 intents.message_content = True
@@ -71,7 +115,7 @@ appointmentsCursor = appointmentsConn.cursor()
 @tree.command(name='ping', description='Get bot ping', guild=discord.Object(id=test_guild))
 async def ping(interaction):
     await interaction.response.send_message(f'PONG! Latency: {str(int(client.latency * 1000))}ms')
-# Students (ah HELL NAH)
+# Students
 @tree.command(name='students', description='Get all students', guild=discord.Object(id=test_guild))
 async def studentsCommand(interaction : interactions.Interaction):
     dbCursor.execute("SELECT * FROM STUDENTS")
@@ -192,6 +236,7 @@ async def searchCommand(interaction : interactions.Interaction, searchInput : st
         embedvar.description += f"\n- {location[1]}"
     # noinspection PyUnresolvedReferences
     await interaction.response.send_message(embed=embedvar)
+
 # schedules
 @guilds(discord.Object(id=test_guild))
 class ScheduleGroup(Group):
@@ -290,19 +335,105 @@ async def locationScheduleCommand(interaction : interactions.Interaction, locati
     # noinspection PyUnresolvedReferences
     await interaction.response.send_message(embeds=embeds)
 
+# tracked users
+@guilds(discord.Object(id=test_guild))
+class TrackedUserGroup(Group):
+    ...
+trackedUserGroup = TrackedUserGroup(name='trackedusers', description='Tracked users system')
+@trackedUserGroup.command(name='add', description='Add a tracked user')
+@describe(userType='Type of user', id='Id of user')
+@rename(userType='type', id='id')
+async def addTrackedUserCommand(interaction : interactions.Interaction, userType : str, id : str):
+    if not Utils.user_exists(id, Utils.UserType(userType.lower())):
+        embed = error_embed("User not found!", f"User with id {id} and type {userType} not found", interaction)
+        # noinspection PyUnresolvedReferences
+        await interaction.response.send_message(embed=embed)
+        return
+    try:
+        TrackedUserManager.addTrackedUser(userType.lower(), id)
+    except ValueError:
+        embed = default_embed("User already tracked!", f"User with id {id} and type {userType} is already being tracked.", 0xff6200, interaction)
+        # noinspection PyUnresolvedReferences
+        await interaction.response.send_message(embed=embed)
+        return
+    user = Utils.get_user(id, Utils.UserType(userType))
+    embed = default_embed(f"<:plus:{plus}> Tracked user added!", f"{userType.capitalize()} {user.get_name()} was added as a tracked user.", 2424576, interaction)
+    # noinspection PyUnresolvedReferences
+    await interaction.response.send_message(embed=embed)
+@trackedUserGroup.command(name='remove', description='Remove a tracked user')
+@describe(userType='Type of user', id='Id of user')
+@rename(userType='type', id='id')
+async def removeTrackedUserCommand(interaction : interactions.Interaction, userType : str, id : str):
+    if not Utils.user_exists(id, Utils.UserType(userType.lower())):
+        embed = error_embed("User not found!", f"User with id {id} and type {userType} not found", interaction)
+        # noinspection PyUnresolvedReferences
+        await interaction.response.send_message(embed=embed)
+        return
+    try :
+        TrackedUserManager.removeTrackedUser(userType.lower(), id)
+    except ValueError:
+        embed = default_embed("User not on tracked user list!", f"User with id {id} and type {userType} is/was not being tracked.", 0xff6200, interaction)
+        # noinspection PyUnresolvedReferences
+        await interaction.response.send_message(embed=embed)
+        return
+    user = Utils.get_user(id, Utils.UserType(userType))
+    embed = default_embed(f"<:minus:{minus}> Tracked user removed! ", f"{userType.capitalize()} {user.get_name()} was removed as a tracked user.", 2424576, interaction)
+    # noinspection PyUnresolvedReferences
+    await interaction.response.send_message(embed=embed)
+@trackedUserGroup.command(name='list', description='List all tracked users')
+async def listTrackedUsersCommand(interaction : interactions.Interaction):
+    trackedUsers = TrackedUserManager.getTrackedUsers()
+    trackedUsers = [f"{user['type']} {user['id']}" for user in trackedUsers]
+    embed, view = list_embed("Tracked users", f"All tracked users\nNumber of tracked users: {len(trackedUsers)}", trackedUsers, interaction, fieldListLimit=50)
+    if view is not None:
+        # noinspection PyUnresolvedReferences
+        await interaction.response.send_message(embed=embed, view=view)
+    else:
+        # noinspection PyUnresolvedReferences
+        await interaction.response.send_message(embed=embed)
+@trackedUserGroup.command(name='update', description='Update tracked users schedules.')
+async def triggerUpdateCommand(interaction : interactions.Interaction):
+    # noinspection PyUnresolvedReferences
+    await interaction.response.send_message(embed=Embeds.processing_embed(interaction))
+    ImportTrackedUserAppointments.ImportAppointmentsForNewUsers()
+    modifiedApp = ImportTrackedUserAppointments.ImportAllModifiedAppointments()
+    with open(f'./logs/TrackedUserUpdate{datetime.datetime.now().strftime("-%Y%m%d-%H%M%S%f")}.json', 'w') as f:
+        # noinspection PyTypeChecker
+        json.dump(modifiedApp, f, cls=CustomEncoder, indent=4)
+    if len(modifiedApp) == 0:
+        embed = Embeds.default_embed("No updates", "No updates found", 0xff6200, interaction)
+        # noinspection PyUnresolvedReferences
+        await interaction.edit_original_response(content=None, embed=embed)
+        return
+    channel = client.get_channel(int(update_channel))
+    message = await channel.send("Update posted")
+    embed = default_embed("Update posted", f"Update posted in {channel.mention} ([Message]({message.jump_url}))", 2424576, interaction)
+    # noinspection PyUnresolvedReferences
+    await interaction.edit_original_response(content=None, embed=embed)
+
+# @tasks.loop(time=trackedUsersUpdateTimes)
+# async def trackedUsersUpdate():
+#     ImportTrackedUserAppointments.ImportAppointmentsForNewUsers()
+
+
 @tree.command(name='error-test', guild=discord.Object(id=test_guild))
 async def errorTest(interaction : interactions.Interaction):
     raise Exception("Test error")
 
 @tree.error
-async def on_error(interaction, error):
-    embedvar = error_embed(error, interaction)
+async def on_error(interaction : interactions.Interaction, error):
+    embedvar = exception_embed(error, interaction)
     # noinspection PyUnresolvedReferences
-    await interaction.response.send_message(embed=embedvar)
+    try:
+        # noinspection PyUnresolvedReferences
+        await interaction.response.send_message(embed=embedvar)
+    except InteractionResponded:
+        await interaction.edit_original_response(content=None, embed=embedvar)
 
 @client.event
 async def on_ready():
     tree.add_command(scheduleGroup)
+    tree.add_command(trackedUserGroup)
     await tree.sync(guild=discord.Object(id=test_guild))
     print(f'We have logged in as {client.user}')
 # @tree.error

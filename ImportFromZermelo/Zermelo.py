@@ -18,6 +18,8 @@ headers = {
 base_url = f"https://{school}.zportal.nl/api/v3/"
 if not os.path.isdir("./logs"):
     os.mkdir("./logs")
+if not os.path.isdir("./logs/messages"):
+    os.mkdir("./logs/messages")
 
 def get_students():
     data = get_endpoint("studentsindepartments", f"schoolInSchoolYear={schoolInSchoolYear}&fields=id,student,departmentOfBranch,mentorGroup,mainGroup,groupInDepartments,fullName,schoolInSchoolYear,firstName,lastName,departmentOfBranchCode,mainGroupName,prefix")
@@ -46,12 +48,13 @@ def get_endpoint(endpoint, parameters):
     url = base_url + endpoint + "?" + parameters
     req = requests.get(url, headers=headers)
     json_data = json.loads(req.text)
-    messagefile = "./logs/message" + datetime.datetime.now().strftime("-%Y%m%d-%H%M%S%f") + ".json"
+    messagefile = "./logs/messages/message" + datetime.datetime.now().strftime("-%Y%m%d-%H%M%S%f") + ".json"
     json_data["request"] = {
         "url": url,
         "headers": headers
     }
     with open(messagefile, 'w', encoding='utf-8') as f:
+        # noinspection PyTypeChecker
         json.dump(json_data, f, ensure_ascii=False, indent=4, sort_keys=True)
     response = json_data["response"]
     if response["status"] != 200:

@@ -4,7 +4,9 @@ import sys
 from os.path import dirname, abspath
 sys.path.append(abspath(dirname(dirname(__file__))))
 from Classes.Appointment import Appointment
-import Zermelo
+from UpdateSystem import TrackedUserManager
+from ImportFromZermelo import Zermelo
+from Classes import Utils
 
 # Create a connection to the databases
 appointmentConn = sqlite3.connect('./trackedUsrApp.db')
@@ -76,19 +78,22 @@ def saveAppointments(appointmentObjectList, user):
         for appointmentObject in appointmentObjectList[week]:
             appointmentCursor.execute(f"INSERT OR REPLACE INTO '{user}' VALUES ({', '.join(['?'] * 42)})", appointmentObject.to_tuple())
 
-def ImportAppointments(user, startWeek, endWeek):
+# user is the student id or teacher code
+# also automatically saves
+def ImportAppointments(user, startWeek, endWeek, userType : Utils.UserType, modifiedSince = None):
     # Check if the user is a brugger
-    if startWeek <= 33:
-        userObject = dbCursor.execute(f"SELECT departmentOfBranchCode FROM STUDENTS WHERE student = {user}").fetchone()
-        print(userObject[0])
-        if "1" in userObject[0]:
-            startWeek = 34
+    if userType == Utils.UserType.STUDENT:
+        if startWeek <= 33:
+            userObject = dbCursor.execute(f"SELECT departmentOfBranchCode FROM STUDENTS WHERE student = '{user}'").fetchone()
+            print(userObject[0])
+            if "1" in userObject[0]:
+                startWeek = 34
     try:
-        list_of_appointments = Zermelo.get_appointments(startWeek, endWeek, user)
+        list_of_appointments = Zermelo.get_appointments(startWeek, endWeek, user, modifiedSince=modifiedSince)
     except Exception as e:
-        if "403" in str(e):
+        if "403" in str(e) and startWeek <= 33:
             # Try again, but with week 34
-            list_of_appointments = Zermelo.get_appointments(34, endWeek, user)
+            list_of_appointments = Zermelo.get_appointments(34, endWeek, user, modifiedSince=modifiedSince)
         else:
             raise e
     # sort the appointments by week
@@ -101,8 +106,40 @@ def ImportAppointments(user, startWeek, endWeek):
         if week in appointmentObjectList: appointmentObjectList[week].append(appointmentObject)
         else: appointmentObjectList[week] = [appointmentObject]
         # print("Type: " + str(type(appointmentObjectList[week])))
-    saveAppointments(appointmentObjectList)
+    saveAppointments(appointmentObjectList, user)
     appointmentConn.commit()
+    return appointmentObjectList
+
+def ImportAllAppointments():
+    trackedUsers = TrackedUserManager.getTrackedUsers()
+    appointmentList = []
+    for user in trackedUsers:
+        appointmentList.append(ImportAppointments(user['id'], 34, 52, Utils.UserType(user['type'])))
+    appointmentList = list(filter(None, appointmentList))
+    return appointmentList
+
+def ImportAllModifiedAppointments():
+    trackedUsers = TrackedUserManager.getTrackedUsers()
+    appointmentList = []
+    for user in trackedUsers:
+        lastModified = appointmentCursor.execute(f"SELECT lastModified FROM '{user['id']}' ORDER BY lastModified DESC LIMIT 1").fetchone()
+        if lastModified is not None:
+            appointmentList.append(ImportAppointments(user['id'], 34, 52, Utils.UserType(user['type']), lastModified[0]))
+        else:
+            raise ValueError(f"User {user['id']} has no appointments")
+        # appointmentList.append(ImportAppointments(user['id'], 34, 52, Utils.UserType(user['type'])))
+    appointmentList = list(filter(None, appointmentList))
+    return appointmentList
+
+def ImportAppointmentsForNewUsers():
+    oldUsers = appointmentCursor.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()
+    trackedUsers = TrackedUserManager.getTrackedUsers()
+    newUsers = [user for user in trackedUsers if user['id'] not in [oldUser[0] for oldUser in oldUsers]]
+    appointmentList = []
+    for user in newUsers:
+        appointmentList.append(ImportAppointments(user['id'], 34, 52, Utils.UserType(user['type'])))
+    appointmentList = list(filter(None, appointmentList))
+    return appointmentList
 
 def close():
     appointmentConn.close()
