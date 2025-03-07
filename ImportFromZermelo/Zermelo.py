@@ -4,6 +4,7 @@ import os
 
 import requests
 from dotenv import find_dotenv, get_key
+from Classes import Utils
 
 dotenv_path = find_dotenv()
 
@@ -37,8 +38,10 @@ def get_groups():
     return data
 
 def get_appointments(startWeek, endWeek, user, modifiedSince : int = None):
-    start = int(datetime.datetime.strptime(f"2024-{startWeek}-1", "%Y-%W-%w").timestamp())
-    end = int(datetime.datetime.strptime(f"2024-{endWeek + 1}-1", "%Y-%W-%w").timestamp())
+    startWeek, startYear = Utils.parseWeek(startWeek)
+    endWeek, endYear = Utils.parseWeek(endWeek)
+    start = int(datetime.datetime.strptime(f"{startYear}-{startWeek}-1", "%Y-%W-%w").timestamp())
+    end = int(datetime.datetime.strptime(f"{endYear}-{endWeek + 1}-1", "%Y-%W-%w").timestamp())
     extraFields = ""
     if modifiedSince is not None: extraFields += f"&modifiedSince={modifiedSince}"
     data = get_endpoint("appointments", f"user={user}{extraFields}&start={start}&end={end}&fields=id,appointmentInstance,start,end,startTimeSlot,endTimeSlot,branch,type,groupsInDepartments,locationsOfBranch,optional,valid,cancelled,cancelledReason,modified,teacherChanged,groupChanged,locationChanged,timeChanged,moved,created,hidden,changeDescription,schedulerRemark,content,lastModified,new,choosableInDepartments,choosableInDepartmentCodes,extraStudentSource,onlineLocationUrl,expectedStudentCount,expectedStudentCountOnline,udmUUID,creator,onlineStudents,appointmentLastModified,remark,availableSpace,subjects,teachers,onlineTeachers")

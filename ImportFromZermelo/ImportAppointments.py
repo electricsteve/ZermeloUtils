@@ -19,21 +19,10 @@ massUsers = {}
 
 lock = threading.Lock()
 
-def setMass(value):
-    global mass
-    mass = value
-    if value:
-        global massUsers
-        users = dbCursor.execute("SELECT student, departmentOfBranchCode FROM STUDENTS").fetchall()
-        for user in users:
-            if "1" in user[1]:
-                massUsers[user[0]] = True
-            else:
-                massUsers[user[0]] = False
+massAppointmentObjectList = {}
 
-def saveAppointments(appointmentObjectList):
-    for week in appointmentObjectList:
-        table = f""" CREATE TABLE IF NOT EXISTS '{week}' (
+def makeSureTablesExist(week):
+    table = f""" CREATE TABLE IF NOT EXISTS '{week}' (
             id INTEGER PRIMARY KEY,
             appointmentInstance TEXT,
             start INTEGER,
@@ -77,15 +66,76 @@ def saveAppointments(appointmentObjectList):
             teachers TEXT,
             onlineTeachers TEXT
         ); """
-        appointmentCursor.execute(table)
+    appointmentCursor.execute(table)
+    table = f""" CREATE TABLE IF NOT EXISTS EVERYTHING (
+            id INTEGER PRIMARY KEY,
+            appointmentInstance TEXT,
+            start INTEGER,
+            end INTEGER,
+            startTimeSlot INTEGER,
+            endTimeSlot INTEGER,
+            branch TEXT,
+            type TEXT,
+            groupsInDepartments TEXT,
+            locationsOfBranch TEXT,
+            optional BOOLEAN,
+            valid BOOLEAN,
+            cancelled BOOLEAN,
+            cancelledReason TEXT,
+            modified BOOLEAN,
+            teacherChanged BOOLEAN,
+            groupChanged BOOLEAN,
+            locationChanged BOOLEAN,
+            timeChanged BOOLEAN,
+            moved BOOLEAN,
+            created INTEGER,
+            hidden BOOLEAN,
+            changeDescription TEXT,
+            schedulerRemark TEXT,
+            content TEXT,
+            lastModified INTEGER,
+            new BOOLEAN,
+            choosableInDepartments TEXT,
+            choosableInDepartmentCodes TEXT,
+            extraStudentSource TEXT,
+            onlineLocationUrl TEXT,
+            expectedStudentCount INTEGER,
+            expectedStudentCountOnline INTEGER,
+            udmUUID TEXT,
+            creator TEXT,
+            onlineStudents TEXT,
+            appointmentLastModified INTEGER,
+            remark TEXT,
+            availableSpace INTEGER,
+            subjects TEXT,
+            teachers TEXT,
+            onlineTeachers TEXT
+        ); """
+    appointmentCursor.execute(table)
+
+
+def setMass(value):
+    global mass
+    mass = value
+    if value:
+        global massUsers
+        users = dbCursor.execute("SELECT student, departmentOfBranchCode FROM STUDENTS").fetchall()
+        for user in users:
+            if "1" in user[1]:
+                massUsers[user[0]] = True
+            else:
+                massUsers[user[0]] = False
+
+def saveAppointments(appointmentObjectList):
+    for week in appointmentObjectList:
+        makeSureTablesExist(week)
         # print("Table created for week: ", week)
         # print(appointmentObjectList[week])
         # print(type(appointmentObjectList[week]))
         # print(len(appointmentObjectList[week]))
         for appointmentObject in appointmentObjectList[week]:
             appointmentCursor.execute(f"INSERT OR REPLACE INTO '{week}' VALUES ({', '.join(['?'] * 42)})", appointmentObject.to_tuple())
-
-massAppointmentObjectList = {}
+            appointmentCursor.execute(f"INSERT OR REPLACE INTO EVERYTHING VALUES ({', '.join(['?'] * 42)})", appointmentObject.to_tuple())
 
 def ImportAppointments(user, startWeek, endWeek, lastModified : int = None):
     if startWeek <= 33:

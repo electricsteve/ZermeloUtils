@@ -49,7 +49,8 @@ if __name__ == "__main__":
         for i in range(numberOfThreads):
             threads.append(threading.Thread(target=importThread, args=(lists[i], 1, 52)))
             threads[i].start()
-        saving = threading.Thread(target=savingThread).start()
+        saving = threading.Thread(target=savingThread)
+        saving.start()
         # wait for threads to finish
         for i in range(numberOfThreads):
             threads[i].join()

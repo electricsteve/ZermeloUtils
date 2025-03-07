@@ -10,6 +10,11 @@ class Group:
         self.name = group["name"]
         self.extendedName = group["extendedName"]
 
+    @staticmethod
+    def from_tuple(t):
+        return Group({"id": t[0], "isMainGroup": t[1], "isMentorGroup": t[2], "departmentOfBranch": t[3], "name": t[4],
+                      "extendedName": t[5]})
+
     def __str__(self):
         return f'Id: {self.id} Is_Main_Group: {self.isMainGroup} Is_Mentor_Group: {self.isMentorGroup} Department_Of_Branch: {self.departmentOfBranch} Name: {self.name} Extended_Name: {self.extendedName}'
 
